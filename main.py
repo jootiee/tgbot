@@ -1,6 +1,6 @@
-import config
+import app.config as config
 import messages as msg
-import keyboards as kb
+import app.keyboards as kb
 import logging
 
 from aiogram import Bot, Dispatcher, executor, types
@@ -21,7 +21,7 @@ PRICE = types.LabeledPrice(label="Подписка на 1 месяц", amount=60
 # start
 @dp.message_handler(commands=['start'])
 async def start(message: types.Message):
-    await bot.send_message(message.chat.id, msg.GREET, reply_markup=kb.inline_kb_main_menu)
+    await bot.send_message(message.chat.id, msg.GREET, reply_markup=kb.reply_kb_main)
 
 
 
@@ -80,12 +80,22 @@ async def successful_payment(message: types.Message):
                            f"Платеж на сумму {message.successful_payment.total_amount // 100} {message.successful_payment.currency} прошел успешно.")
     
     
-    #TODO: все остальное
 
 @dp.message_handler()
 async def failed_payment(message: types.Message):
     await message.reply("Такой команды нет.")
 
+'''
+TODO:
+реализовать взаимодействие с бд:
+занесение пользователя в бд ПРИ ПОКУПКЕ - даты оплаты, даты истечения платежа
+хранение ссылок на профили пользователей
+
+реализовать выдачу ссылки пользователю
+реализовать деактивацию ссылки пользователя
+
+реализовать напоминание об истечении подписки
+'''
 
 # run long-polling
 if __name__ == "__main__":
