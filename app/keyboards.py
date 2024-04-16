@@ -1,20 +1,19 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.types import ReplyKeyboardMarkup
+from aiogram.types import ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
 
-# inline_btn_buy = InlineKeyboardButton(text='Приобрести подписку', callback_data='button_buy')
-# inline_btn_status = InlineKeyboardButton(text='Статус подписки', callback_data='button_subscription_status')
-# inline_btn_help = InlineKeyboardButton(text='Помощь', callback_data='button_help')
-# inline_btn_back_to_menu = InlineKeyboardButton(text='Назад', callback_data='button_main_menu')
+def gen(flag='other'):
+    reply_kb = ReplyKeyboardMarkup(resize_keyboard=True)
 
-# inline_kb_main_menu = InlineKeyboardMarkup(inline_keyboard=[[inline_btn_buy, inline_btn_status], [inline_btn_help]])
-
-# #inline_kb_main_menu.add(inline_btn_buy, inline_btn_status)
-# #inline_kb_main_menu.add(inline_btn_help)
-# #inline_kb_main_menu = inline_kb_main_menu.as_markup()
-
-# inline_kb_other = InlineKeyboardMarkup(inline_keyboard=[[inline_btn_back_to_menu]])
+    if flag == 'main':
+        return reply_kb.add('Приобрести подписку', 'Статус подписки').add('Помощь')
+    if flag == 'help':
+        return reply_kb.add('Главное меню')
+    if flag == 'other':
+        return reply_kb.add('Главное меню').add('Помощь')
 
 
-reply_kb_main = ReplyKeyboardMarkup(resize_keyboard=True)
+pay = InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton(text='Я оплатил', callback_data='payment'),
+                                            InlineKeyboardButton(text='Главное меню', callback_data='main_menu'))
 
-reply_kb_main.add('Приобрести подписку', 'Статус подписки').add('Помощь')
+pay_confirm = InlineKeyboardMarkup(row_width=2).add(InlineKeyboardButton(text='Подтвердить', callback_data='payment_accept'),
+                                                    InlineKeyboardButton(text='Отказать',    callback_data='payment_decline')
+                                                    )

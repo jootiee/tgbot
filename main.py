@@ -1,88 +1,99 @@
 import app.config as config
-import messages as msg
+import app.messages as msg
 import app.keyboards as kb
 import logging
 
 from aiogram import Bot, Dispatcher, executor, types
-from aiogram.types.message import ContentType
 
 # log
 logging.basicConfig(level=logging.INFO)
 
 # init
-bot = Bot(token=config.TOKEN)
+bot = Bot(token=config.TOKEN, disable_web_page_preview=True)
 dp = Dispatcher(bot)
 
-# prices
-PRICE = types.LabeledPrice(label="Подписка на 1 месяц", amount=6000)  # в копейках (руб)
+# Consists of previous messages in chats: 'chat_id': 'message_id'
+msg_prev_bot = dict()
+msg_prev_user = dict()
 
 
+async def delete_prev_msg(msg_bot, msg_user):
+    global msg_prev_bot, msg_prev_user
+    if msg_bot['chat']['id'] in msg_prev_bot.keys():
+        await bot.delete_message(chat_id=msg_bot['chat']['id'], message_id=msg_prev_bot[msg_bot['chat']['id']])
+    if msg_user:
+        if msg_user['chat']['id'] in msg_prev_user.keys():
+            await bot.delete_message(chat_id=msg_user['chat']['id'], message_id=msg_prev_user[msg_user['chat']['id']])
+        msg_prev_user[msg_user['chat']['id']] = msg_user['message_id']
 
-# start
-@dp.message_handler(commands=['start'])
+    msg_prev_bot[msg_bot['chat']['id']] = msg_bot['message_id']
+    
+@dp.message_handler(text=['Главное меню', '/start'])
 async def start(message: types.Message):
-    await bot.send_message(message.chat.id, msg.GREET, reply_markup=kb.reply_kb_main)
+    msg_bot = await bot.send_message(message.chat.id, msg.GREET, reply_markup=kb.gen(flag='main'))
+    await delete_prev_msg(msg_bot, message)
 
-
-
-# help
-@dp.callback_query_handler(lambda query: query.data == 'button_help')
-async def process_callback_help(callback_query: types.CallbackQuery):
-   await bot.answer_callback_query(callback_query.id)
-   await bot.send_message(callback_query.from_user.id, msg.HELP)
+@dp.message_handler(text=['Помощь'])
+async def help(message: types.Message):
+    msg_bot = await bot.send_message(message.chat.id, msg.HELP, reply_markup=kb.gen(flag='help'))
+    await delete_prev_msg(msg_bot, message)
     
-# subscription status 
-@dp.callback_query_handler(lambda query: query.data == 'button_subscription_status')
-async def process_callback_status(callback_query: types.CallbackQuery):
-   await bot.answer_callback_query(callback_query.id)
-   await bot.send_message(callback_query.from_user.id, msg.STATUS)
+@dp.message_handler(text=['Статус подписки'])
+async def subscription_status(message: types.Message):
+   msg_bot = await bot.send_message(message.chat.id, msg.STATUS, reply_markup=kb.gen())
+   await delete_prev_msg(msg_bot, message)
  
+@dp.message_handler(text=['Приобрести подписку'])
+async def buy(message: types.Message):
+    msg_bot = await bot.send_message(message.chat.id, msg.BUY, reply_markup=kb.pay)
+    await delete_prev_msg(msg_bot, message)
 
 
-# buy
-@dp.callback_query_handler(lambda query: query.data == 'button_buy')
-async def process_callback_buy(callback_query: types.CallbackQuery):
-    await bot.answer_callback_query(callback_query.id)
-    if config.PAYMENTS_TOKEN.split(':')[1] == 'TEST':
-        await bot.send_message(callback_query.from_user.id, "Тестовый платеж!!!")
+############################################
+# ADMIN METHODS 
 
-    await bot.send_invoice(callback_query.from_user.id,
-                           title="Подписка на бота",
-                           description="Активация подписки на бота на 1 месяц",
-                           provider_token=config.PAYMENTS_TOKEN,
-                           currency="rub",
-                           photo_url="https://www.aroged.com/wp-content/uploads/2022/06/Telegram-has-a-premium-subscription.jpg",
-                           photo_width=416,
-                           photo_height=234,
-                           photo_size=416,
-                           is_flexible=False,
-                           prices=[PRICE],
-                           start_parameter="one-month-subscription",
-                           payload="test-invoice-payload")
- 
-    
-    
-# pre checkout  (must be answered in 10 seconds)
-@dp.pre_checkout_query_handler(lambda query: True)
-async def pre_checkout_query(pre_checkout_q: types.PreCheckoutQuery):
-    await bot.answer_pre_checkout_query(pre_checkout_q.id, ok=True)
+async def send_payment_info(user_id, user_name): 
+    await bot.send_message(config.ADMIN_ID, msg.PAYMENT.format(str(user_id), user_name, str(user_id)), 
+                           reply_markup=kb.pay_confirm)
+
+@dp.callback_query_handler(lambda query: query.data == 'payment_accept')
+async def query_payment_accept(callback_query: types.CallbackQuery):
+    user_id = int(callback_query['message']['text'].split()[0])
+    msg_bot = await bot.send_message(callback_query.from_user.id, msg.PAYMENT_SUBSCRIPTION_DURATION)
+    await delete_prev_msg(msg_bot, 0)
+    # TODO: доделать ввод длительности подписки (посмотреть про FSM автоматы), выдачу ссылки на профиль
+
+    profile_url = ''
+
+    msg_bot = await bot.send_message(user_id, msg.PAYMENT_SUCCESSFUL.format(profile_url), 
+                                     parse_mode=types.message.ParseMode.MARKDOWN_V2)
+    await delete_prev_msg(msg_bot, 0)
+
+@dp.callback_query_handler(lambda query: query.data == 'payment_decline')
+async def query_payment_decline(callback_query: types.CallbackQuery):
+    user_id = int(callback_query['message']['text'].split()[0])
+    msg_bot = await bot.send_message(callback_query.from_user.id, msg.PAYMENT_DECLINE_ADMIN)
+    await delete_prev_msg(msg_bot, 0)
+    msg_bot = await bot.send_message(user_id, msg.PAYMENT_DECLINE_USER)
+    await delete_prev_msg(msg_bot, 0)
 
 
-# successful payment
-@dp.message_handler(content_types=ContentType.SUCCESSFUL_PAYMENT)
-async def successful_payment(message: types.Message):
-    print("SUCCESSFUL PAYMENT:")
-    payment_info = message.successful_payment.to_python()
-    for k, v in payment_info.items():
-        print(f"{k} = {v}")
+############################################
 
-    await bot.send_message(message.chat.id,
-                           f"Платеж на сумму {message.successful_payment.total_amount // 100} {message.successful_payment.currency} прошел успешно.")
-    
+@dp.callback_query_handler(lambda query: query.data == 'payment')
+async def query_payment(callback_query: types.CallbackQuery):
+    msg_bot = await bot.send_message(callback_query.from_user.id, msg.PAYMENT_IN_PROCESS, reply_markup=kb.gen())
+    await delete_prev_msg(msg_bot, 0)
+    await send_payment_info(callback_query.from_user.id, callback_query.from_user.username)
+
+@dp.callback_query_handler(lambda query: query.data == 'main_menu')
+async def query_main_menu(callback_query: types.CallbackQuery):
+    msg_bot = await bot.send_message(callback_query.from_user.id, msg.GREET, reply_markup=kb.gen(flag='main'))
+    await delete_prev_msg(msg_bot, 0)
     
 
 @dp.message_handler()
-async def failed_payment(message: types.Message):
+async def unknown_command(message: types.Message):
     await message.reply("Такой команды нет.")
 
 '''
