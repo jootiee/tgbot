@@ -1,7 +1,9 @@
 import sqlite3 as sq
+import datetime as dt
 
 db = sq.connect('data.db')
 cur = db.cursor()
+
 
 async def start():
     cur.execute('''CREATE TABLE IF NOT EXISTS users
@@ -49,11 +51,12 @@ async def set_msg_prev_user(chat_id, message_id):
 async def get_msg_prev_bot(chat_id):
     message_id = cur.execute('''
                              SELECT * FROM msg_prev_bot WHERE chat_id == {}
-                             '''.format(chat_id)).fetchone()[1]
-    return message_id
+                             '''.format(chat_id)).fetchone()
+    
+    return message_id[1] if message_id else 0
 
 
-async def set_msg_prev_bot(chat_id, message_id):
+async def set_msg_prev_bot(chat_id, message_id, text=''):
     if await get_msg_prev_bot(chat_id):
         cur.execute('''UPDATE msg_prev_bot SET message_id = (?) WHERE chat_id == (?)
                     ''', (message_id, chat_id))
@@ -64,6 +67,11 @@ async def set_msg_prev_bot(chat_id, message_id):
                     (chat_id, message_id))
     db.commit()
 
+
+async def add_user(state):
+    async with state.proxy() as data:
+        print(data)
+    
     
 async def is_subscription_active(id):
     pass
