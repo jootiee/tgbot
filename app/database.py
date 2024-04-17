@@ -9,10 +9,11 @@ async def start():
     cur.execute('''CREATE TABLE IF NOT EXISTS users
                 (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        tg_id INTEGER,
+        user_id INTEGER,
         active_subscription INTEGER,
-        date_of_payment TEXT,
-        date_expiration TEXT
+        start_date TEXT,
+        end_date TEXT,
+        profile_url TEXT
             )
                 ''')
     
@@ -70,8 +71,35 @@ async def set_msg_prev_bot(chat_id, message_id, text=''):
 
 async def add_user(state):
     async with state.proxy() as data:
-        print(data)
+        user_id = data['user_id']
+        duration = data['duration']
+    start_date = (dt.datetime.now()).strftime('%d-%m-%Y')
+    end_date = (dt.datetime.now() + dt.timedelta(days=int(duration) + 1)).strftime('%d-%m-%Y')
+    cur.execute('''
+                INSERT INTO users (user_id, active_subscription, start_date, end_date) VALUES (?, ?, ?, ?)
+                ''',
+                (user_id, 1, start_date, end_date))
+    db.commit()
     
+
+async def is_user_exist(user_id):
+    return bool(cur.execute('SELECT * FROM users WHERE user_id == ?', (user_id,)).fetchone())
+
+
+async def get_profile_url(user_id) -> str:
+    return cur.execute('SELECT * FROM users WHERE user_id == ?', (user_id,)).fetchone()[5]
+
+
+async def get_start_date(user_id):
+    start_date = cur.execute('SELECT * from users WHERE user_id == ?', (user_id,)).fetchone()[3].split('-')
+    return start_date
+
+
+async def get_exp_date(user_id):
+    exp_date = cur.execute('SELECT * from users WHERE user_id == ?', (user_id,)).fetchone()[4].split('-')
+    days_left = (dt.datetime(day=int(exp_date[0]), month=int(exp_date[1]), year=int(exp_date[2])) - dt.datetime.now()).days
+    return (exp_date, days_left)
     
-async def is_subscription_active(id):
-    pass
+
+async def is_subscription_active(user_id):
+    return cur.execute('SELECT * from users WHERE user_id == ?', (user_id,)).fetchone()[2] == 1 if await is_user_exist(user_id) else False
