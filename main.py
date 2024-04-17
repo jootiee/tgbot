@@ -76,7 +76,7 @@ async def process_query_buy(callback_query: types.CallbackQuery):
 
 async def send_payment_info(user_id, user_name): 
     await bot.send_message(config.ADMIN_ID, msg.PAYMENT.format(str(user_id), user_name, str(user_id)), 
-                           reply_markup=kb.pay_confirm)
+                           reply_markup=kb.pay_confirm, parse_mode=types.message.ParseMode.MARKDOWN_V2)
 
 @dp.callback_query_handler(lambda query: query.data == 'payment_accept')
 async def query_payment_accept(callback_query: types.CallbackQuery):
@@ -99,7 +99,7 @@ async def set_subscriber_id(message: types.Message, state: FSMContext):
 async def send_confirmation_message(user_id):
     msg_bot_prev = await db.get_msg_prev_bot(user_id)
     
-    profile_url = 'https://google.com/' #TODO
+    profile_url = await db.get_profile_url(user_id)
     
     exp_date, days_left = await db.get_exp_date(user_id)
     

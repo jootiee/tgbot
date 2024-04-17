@@ -87,7 +87,8 @@ async def is_user_exist(user_id):
 
 
 async def get_profile_url(user_id) -> str:
-    return cur.execute('SELECT * FROM users WHERE user_id == ?', (user_id,)).fetchone()[5]
+    # return cur.execute('SELECT * FROM users WHERE user_id == ?', (user_id,)).fetchone()[5]
+    return 'https://google.com/'
 
 
 async def get_start_date(user_id):
