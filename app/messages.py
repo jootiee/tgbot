@@ -4,7 +4,9 @@ HELP = """Помощь."""
 
 BUY = """Приобрести подписку."""
 
-SUBCRIBER_ADDED = '''подписчик с айди таким то добавлен дата оплаты дата истечения подписки'''
+def SUBCRIBER_ADDED(user_id, start_date, end_date):
+    string = 'Пользователь `{}` добавлен\.\n\nДата оплаты\: {}\nДата истечения подписки\: {}'
+    return string.format(user_id, '\.'.join(start_date), '\.'.join(end_date))
 
 WRONG_DURATION_INPUT = '''Пожалуйста, введите число.'''
 
@@ -20,7 +22,7 @@ PAYMENT_SUBSCRIPTION_DURATION = '''Введите длительность по�
 
 def get_days_left(days_left):
     string_days_left = ''
-    
+
     if days_left % 10 == 1:
         string_days_left += str(days_left) + '  день'
     elif 5 <= days_left <= 20:

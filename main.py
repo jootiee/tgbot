@@ -2,6 +2,7 @@ import app.config as config
 import app.messages as msg
 import app.keyboards as kb
 import app.database as db
+import app.ex_bridge as ex
 import logging
 
 from aiogram import Bot, Dispatcher, executor, types
@@ -32,7 +33,7 @@ async def on_startup(_):
     print('Bot is running.')
 
 
-@dp.message_handler(text=['Главное меню', '/start'])
+@dp.message_handler(commands=['start'])
 async def start(message: types.Message):
     msg_bot_prev = await db.get_msg_prev_bot(message.chat.id)
     if msg_bot_prev:
@@ -49,7 +50,8 @@ async def start(message: types.Message):
 async def process_callback_help(callback_query: types.CallbackQuery):
     msg_bot_prev = await db.get_msg_prev_bot(callback_query.from_user.id)
     await bot.edit_message_text(chat_id=callback_query.from_user.id, message_id=msg_bot_prev, text=msg.HELP)
-    await bot.edit_message_reply_markup(chat_id=callback_query.from_user.id, message_id=msg_bot_prev, reply_markup=kb.gen_inline(flag='help'))
+    active_subscription = await db.is_subscription_active(callback_query.from_user.id)
+    await bot.edit_message_reply_markup(chat_id=callback_query.from_user.id, message_id=msg_bot_prev, reply_markup=kb.gen_inline(flag='help', active_subscription=active_subscription))
     
 
 @dp.callback_query_handler(lambda query: query.data == 'status')
@@ -61,7 +63,7 @@ async def process_query_status(callback_query: types.CallbackQuery):
     profile_url = await db.get_profile_url(callback_query.from_user.id)
 
     await bot.edit_message_text(chat_id=callback_query.from_user.id, message_id=msg_bot_prev, text=msg.STATUS(start_date, end_date, days_left, profile_url), parse_mode=types.message.ParseMode.MARKDOWN_V2)
-    await bot.edit_message_reply_markup(chat_id=callback_query.from_user.id, message_id=msg_bot_prev, reply_markup=kb.gen_inline())
+    await bot.edit_message_reply_markup(chat_id=callback_query.from_user.id, message_id=msg_bot_prev, reply_markup=kb.gen_inline(flag='status'))
  
 
 @dp.callback_query_handler(lambda query: query.data == 'buy')
@@ -103,7 +105,7 @@ async def send_confirmation_message(user_id):
     
     exp_date, days_left = await db.get_exp_date(user_id)
     
-    msg_bot = await bot.send_message(chat_id=user_id, text=msg.PAYMENT_SUCCESSFUL(exp_date, days_left, profile_url), reply_markup=kb.gen_inline(), parse_mode=types.message.ParseMode.MARKDOWN_V2)
+    msg_bot = await bot.send_message(chat_id=user_id, text=msg.PAYMENT_SUCCESSFUL(exp_date, days_left, profile_url), reply_markup=kb.gen_inline(active_subscription=True), parse_mode=types.message.ParseMode.MARKDOWN_V2)
 
     await bot.delete_message(user_id, msg_bot_prev)
     await db.set_msg_prev_bot(user_id, msg_bot.message_id)
@@ -117,7 +119,9 @@ async def set_subscription_duration(message: types.Message, state: FSMContext):
             user_id = data['user_id']
         await db.add_user(state)
         await state.finish()
-        await bot.send_message(message.chat.id, text=msg.SUBCRIBER_ADDED)
+        start_date = await db.get_start_date(user_id)
+        end_date = (await db.get_exp_date(user_id))[0]
+        await bot.send_message(message.chat.id, text=msg.SUBCRIBER_ADDED(user_id, start_date, end_date), parse_mode=types.message.ParseMode.MARKDOWN_V2)
         await send_confirmation_message(user_id)
     else:
         await bot.send_message(message.chat.id, text=msg.WRONG_DURATION_INPUT)
@@ -156,7 +160,8 @@ async def query_main_menu(callback_query: types.CallbackQuery):
 async def unknown_command(message: types.Message):
     msg_bot_prev = await db.get_msg_prev_bot(message.chat.id)
     await bot.delete_message(message.chat.id, msg_bot_prev)
-    msg_bot = await bot.send_message(message.chat.id, msg.UNKNOWN_COMMAND, reply_markup=kb.gen_inline())
+    active_subscription = db.is_subscription_active(message.chat.id)
+    msg_bot = await bot.send_message(message.chat.id, msg.UNKNOWN_COMMAND, reply_markup=kb.gen_inline(active_subscription=active_subscription))
     await db.set_msg_prev_bot(msg_bot.chat.id, msg_bot.message_id)
 
 

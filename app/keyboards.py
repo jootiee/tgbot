@@ -13,10 +13,16 @@ def gen_inline(flag='other', active_subscription=False, admin=False):
         )
         
     if flag == 'help':
-        return reply_kb.add(InlineKeyboardButton( text='Главное меню',           callback_data='main_menu')
+        return reply_kb.add(InlineKeyboardButton( text='Главное меню',           callback_data='status')
+                            if active_subscription else
+                            InlineKeyboardButton( text='Главное меню',           callback_data='main_menu')
         )
+    if flag == 'status':
+        return reply_kb.add(InlineKeyboardButton( text='Помощь',                 callback_data='help'))
     if flag == 'other':
-        return reply_kb.add(InlineKeyboardButton( text='Главное меню',           callback_data='main_menu'), 
+        return reply_kb.add(InlineKeyboardButton( text='Главное меню',           callback_data='status')
+                            if active_subscription else
+                            InlineKeyboardButton( text='Главное меню',           callback_data='main_menu'), 
                             InlineKeyboardButton( text='Помощь',                 callback_data='help')
         )
 
