@@ -35,7 +35,6 @@ def get_days_left(days_left):
     
 def PAYMENT_SUCCESSFUL(end_date, days_left, profile_url):
     string = '''Подписка оплачена успешно\!\nДата истечения подписки\: {} \({}\)\.\n\nГайд по установке\: \([ссылка](https://jootiee.notion.site/VPN-Setup-0d66f241451747bfaf26e701c5a1c0fc?pvs=4)\)\n\nПрофиль \(нажмите на неё\, чтобы скопировать\)\:\n`{}`'''
-        
     return string.format('\.'.join(end_date), get_days_left(days_left), profile_url)
  
  
@@ -50,8 +49,20 @@ PAYMENT_DECLINE_ADMIN = '''Подписка не была активирован
 
 PAYMENT_DECLINE_USER = '''Оплата не была произведена. Подписка не была активирована.'''
 
-ADMIN_SUSPEND_USER_ID = '''Введите ID пользователя:'''
+ADMIN_AWAIT_USER_ID = '''Введите ID пользователя:'''
 
-ADMIN_USER_SUSPENDED = '''Подписка пользователя с ID `{}` приостановлена\.'''
+def ADMIN_USER_SUSPENDED(user_id: str) -> str:
+    string = '''Подписка пользователя с ID `{}` приостановлена\.'''
+    return string.format(user_id)
 
-ADMIN_USER_NOT_SUBSCRIBED = '''Пользователь с ID `{}` не имеет активной подписки\.'''
+def ADMIN_USER_NOT_SUBSCRIBED(user_id: str) -> str:
+    string = '''Пользователь с ID `{}` не имеет активной подписки\.'''
+    return string.format(user_id)
+
+def ADMIN_USER_ALREADY_ACTIVE(user_id: str, start_date: list, end_date: list) -> str:
+    string = '''Подписка пользователя с ID `{}` уже активна\.\n\nДата активации\: {}\nДата окончания\: {}'''
+    return string.format(user_id, '\.'.join(start_date), '\.'.join(end_date))
+
+def ADMIN_USER_RESUMED(user_id: str, start_date: list, end_date: list) -> str:
+    string = '''Подписка пользователя с ID `{}` возобновлена\.\n\nДата активации\n: {}\nДата окончания\: {}'''
+    return string.format(user_id, '\.'.join(start_date), '\.'.join(end_date))

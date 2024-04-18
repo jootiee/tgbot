@@ -26,6 +26,11 @@ class Subscriber(StatesGroup):
 class Unsubscribe(StatesGroup):
     user_id = State()
 
+    
+class Subscribe(StatesGroup):
+    user_id = State()
+
+
 async def on_startup(_):
     await db.start()
     print('Bot is running.')
@@ -212,7 +217,7 @@ async def query_admin_panel_suspend(callback_query: types.CallbackQuery):
     
     await bot.edit_message_text(chat_id=callback_query.from_user.id,
                                 message_id=msg_bot_prev,
-                                text=msg.ADMIN_SUSPEND_USER_ID)
+                                text=msg.ADMIN_AWAIT_USER_ID)
     await Unsubscribe.user_id.set()
 
 
@@ -222,19 +227,55 @@ async def admin_panel_suspend_user_set_id(message: types.Message, state: FSMCont
         user_id = message.text
         await state.finish()
         if await db.is_subscription_active(user_id):
-            await db.suspend_user(user_id)
+            await db.suspend_user(int(user_id))
             await ex.suspend_user(user_id)
 
             await bot.send_message(chat_id=message.chat.id,
-                             text=msg.ADMIN_USER_SUSPENDED.format(user_id),
+                             text=msg.ADMIN_USER_SUSPENDED(user_id),
                              parse_mode=types.message.ParseMode.MARKDOWN_V2)
         else:
             await bot.send_message(chat_id=message.chat.id,
-                             text=msg.ADMIN_USER_NOT_SUBSCRIBED.format(user_id),
+                             text=msg.ADMIN_USER_NOT_SUBSCRIBED(user_id),
                              parse_mode=types.message.ParseMode.MARKDOWN_V2)
     else:
         await bot.send_message(chat_id=message.chat.id,
                                text=msg.INPUT_NON_INTEGER)
+
+
+@dp.callback_query_handler(lambda query: query.data == 'admin_panel_resume')
+async def admin_panel_resume(callback_query: types.CallbackQuery):
+    msg_bot_prev = await db.get_msg_prev_bot(callback_query.from_user.id)
+
+    await bot.edit_message_text(chat_id=callback_query.from_user.id,
+                                message_id=msg_bot_prev,
+                                text=msg.ADMIN_AWAIT_USER_ID)
+    await Subscribe.user_id.set()
+
+
+@dp.message_handler(state=Subscribe.user_id)
+async def admin_panel_resume_user_set_id(message: types.Message, state: FSMContext):
+    if message.text.isdigit():
+        user_id = message.text
+        await state.finish()
+        if await db.is_subscription_active(user_id):
+            start_date = await db.get_start_date(int(user_id))
+            end_date = (await db.get_exp_date(int(user_id)))[0]
+            await bot.send_message(chat_id=message.chat.id,
+                             text=msg.ADMIN_USER_ALREADY_ACTIVE(user_id, start_date, end_date),
+                             parse_mode=types.message.ParseMode.MARKDOWN_V2)
+        else:
+            await db.resume_user(int(user_id))
+            await ex.resume_user(user_id)
+
+            await bot.send_message(chat_id=message.chat.id,
+                             text=msg.ADMIN_USER_RESUMED(user_id),
+                             parse_mode=types.message.ParseMode.MARKDOWN_V2)
+           
+    else:
+        await bot.send_message(chat_id=message.chat.id,
+                               text=msg.INPUT_NON_INTEGER)
+
+
 ############################################
 
 @dp.callback_query_handler(lambda query: query.data == 'payment')

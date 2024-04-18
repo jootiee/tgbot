@@ -110,6 +110,12 @@ async def is_subscription_active(user_id):
     return cur.execute('SELECT * from users WHERE user_id == ?', (user_id,)).fetchone()[2] == 1 if await is_user_exist(user_id) else False
 
 
-async def suspend_user(user_id):
+async def suspend_user(user_id: int):
     cur.execute('UPDATE users SET active_subscription = 0 WHERE user_id == ?', (user_id,))
     db.commit()
+    
+
+async def resume_user(user_id: int):
+    cur.execute('UPDATE users SET active_subscription = 1 WHERE user_id == ?', (user_id,))
+    db.commit()
+    
