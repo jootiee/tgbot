@@ -8,7 +8,7 @@ def SUBCRIBER_ADDED(user_id, start_date, end_date):
     string = 'Пользователь `{}` добавлен\.\n\nДата оплаты\: {}\nДата истечения подписки\: {}'
     return string.format(user_id, '\.'.join(start_date), '\.'.join(end_date))
 
-WRONG_DURATION_INPUT = '''Пожалуйста, введите число.'''
+INPUT_NON_INTEGER = '''Пожалуйста, введите число.'''
 
 UNKNOWN_COMMAND = '''Такой команды нет'''
 
@@ -34,16 +34,24 @@ def get_days_left(days_left):
     return string_days_left
     
 def PAYMENT_SUCCESSFUL(end_date, days_left, profile_url):
-    string = '''Подписка оплачена успешно\!\nДата истечения подписки\: {} \({}\)\.\n\nГайд по установке\: \([ссылка](https://jootiee.notion.site/VPN-Setup-0d66f241451747bfaf26e701c5a1c0fc?pvs=4)\)\n\nПрофиль\:\n`{}`'''
+    string = '''Подписка оплачена успешно\!\nДата истечения подписки\: {} \({}\)\.\n\nГайд по установке\: \([ссылка](https://jootiee.notion.site/VPN-Setup-0d66f241451747bfaf26e701c5a1c0fc?pvs=4)\)\n\nПрофиль \(нажмите на неё\, чтобы скопировать\)\:\n`{}`'''
         
     return string.format('\.'.join(end_date), get_days_left(days_left), profile_url)
  
  
 def STATUS(start_date, end_date, days_left, profile_url):
-    string = """Подписка активна\.\n\nДата начала подписки\: {}\nДата истечения подписки\: {} \({}\)\n\nГайд по установке\: \([ссылка](https://jootiee.notion.site/VPN-Setup-0d66f241451747bfaf26e701c5a1c0fc?pvs=4)\)\n\nСсылка на профиль\:\n`{}`"""
+    string = """Подписка активна\.\n\nДата начала подписки\: {}\nДата истечения подписки\: {} \({}\)\n\nГайд по установке\: \([ссылка](https://jootiee.notion.site/VPN-Setup-0d66f241451747bfaf26e701c5a1c0fc?pvs=4)\)\n\nСсылка на профиль \(нажмите на неё\, чтобы скопировать\)\:\n`{}`"""
     return string.format('\.'.join(start_date[0]), '\.'.join(end_date), get_days_left(days_left), profile_url)
-   
+
+
+ADMIN_PANEL = '''Админ панель.'''
 
 PAYMENT_DECLINE_ADMIN = '''Подписка не была активирована.'''
 
 PAYMENT_DECLINE_USER = '''Оплата не была произведена. Подписка не была активирована.'''
+
+ADMIN_SUSPEND_USER_ID = '''Введите ID пользователя:'''
+
+ADMIN_USER_SUSPENDED = '''Подписка пользователя с ID `{}` приостановлена\.'''
+
+ADMIN_USER_NOT_SUBSCRIBED = '''Пользователь с ID `{}` не имеет активной подписки\.'''

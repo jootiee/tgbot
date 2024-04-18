@@ -1,6 +1,6 @@
 import sqlite3 as sq
 import datetime as dt
-
+import app.ex_bridge as ex
 db = sq.connect('data.db')
 cur = db.cursor()
 
@@ -75,10 +75,11 @@ async def add_user(state):
         duration = data['duration']
     start_date = (dt.datetime.now()).strftime('%d-%m-%Y')
     end_date = (dt.datetime.now() + dt.timedelta(days=int(duration) + 1)).strftime('%d-%m-%Y')
+    profile_url = await ex.add_user(user_id)
     cur.execute('''
-                INSERT INTO users (user_id, active_subscription, start_date, end_date) VALUES (?, ?, ?, ?)
+                INSERT INTO users (user_id, active_subscription, start_date, end_date, profile_url) VALUES (?, ?, ?, ?, ?)
                 ''',
-                (user_id, 1, start_date, end_date))
+                (user_id, 1, start_date, end_date, profile_url))
     db.commit()
     
 
@@ -87,9 +88,8 @@ async def is_user_exist(user_id):
 
 
 async def get_profile_url(user_id) -> str:
-    # return cur.execute('SELECT * FROM users WHERE user_id == ?', (user_id,)).fetchone()[5]
-    return 'https://google.com/'
-
+    profile_url = cur.execute('SELECT * from users WHERE user_id == ?', (user_id,)).fetchone()[5]
+    return profile_url
 
 async def get_start_date(user_id):
     start_date = cur.execute('SELECT * from users WHERE user_id == ?', (user_id,)).fetchone()[3].split('-')
@@ -100,7 +100,16 @@ async def get_exp_date(user_id):
     exp_date = cur.execute('SELECT * from users WHERE user_id == ?', (user_id,)).fetchone()[4].split('-')
     days_left = (dt.datetime(day=int(exp_date[0]), month=int(exp_date[1]), year=int(exp_date[2])) - dt.datetime.now()).days
     return (exp_date, days_left)
+
+
+async def get_subs_stats():
+    return await ex.get_stats()
     
 
 async def is_subscription_active(user_id):
     return cur.execute('SELECT * from users WHERE user_id == ?', (user_id,)).fetchone()[2] == 1 if await is_user_exist(user_id) else False
+
+
+async def suspend_user(user_id):
+    cur.execute('UPDATE users SET active_subscription = 0 WHERE user_id == ?', (user_id,))
+    db.commit()
