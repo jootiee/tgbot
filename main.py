@@ -1,10 +1,12 @@
 import app.config as config
 import app.messages as msg
 import app.keyboards as kb
-import app.database as db
-import app.ex_bridge as ex
+from app.database import Database
+from app.ex_bridge import EXBridge
+from app.poller import Poller
 import logging
 
+import asyncio
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
@@ -16,6 +18,10 @@ logging.basicConfig(level=logging.INFO)
 bot = Bot(token=config.TOKEN, disable_web_page_preview=True)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
+ex = EXBridge(config.PATH_EX, config.DIR_EX)
+db = Database(config.PATH_DATABASE, ex)
+poller = Poller(countdown=config.COUNTDOWN_POLL, 
+                bot=bot)
 
 
 class Subscriber(StatesGroup):
@@ -23,18 +29,23 @@ class Subscriber(StatesGroup):
     duration = State()
 
 
-class Unsubscribe(StatesGroup):
+class Suspend(StatesGroup):
     user_id = State()
 
     
-class Subscribe(StatesGroup):
+class Resume(StatesGroup):
     user_id = State()
 
 
-async def on_startup(_):
-    await db.start()
-    print('Bot is running.')
+class NewUser(StatesGroup):
+    user_id = State()
+    duration = State()
 
+
+async def on_startup(_):
+    poller.edit_data(await db.get_data())
+    asyncio.create_task(poller.check())
+    
 
 @dp.message_handler(commands=['start'])
 async def start(message: types.Message):
@@ -43,13 +54,13 @@ async def start(message: types.Message):
         try:
             await bot.delete_message(chat_id=message.chat.id, message_id=msg_bot_prev)
         except MessageToDeleteNotFound:
-            print('aiogram.utils.exceptions.MessageToDeleteNotFound: User has already deleted this message.')
+            logging.error('aiogram.utils.exceptions.MessageToDeleteNotFound: User has already deleted this message.')
     
     msg_bot = await bot.send_message(message.chat.id, 
                                      msg.GREET, 
                                      reply_markup=kb.gen_inline(flag='main', 
                                                                 active_subscription=await db.is_subscription_active(message.chat.id),
-                                                                admin=(message.chat.id == config.ADMIN_ID)
+                                                                admin=(message.chat.id == config.ID_ADMIN)
                                                                 ))
     await db.set_msg_prev_bot(msg_bot.chat.id, msg_bot.message_id)
 
@@ -70,7 +81,6 @@ async def process_callback_help(callback_query: types.CallbackQuery):
 @dp.callback_query_handler(lambda query: query.data == 'status')
 async def process_query_status(callback_query: types.CallbackQuery):
     msg_bot_prev = await db.get_msg_prev_bot(callback_query.from_user.id)
-
     start_date = await db.get_start_date(callback_query.from_user.id), 
     end_date, days_left = await db.get_exp_date(callback_query.from_user.id)
     profile_url = await db.get_profile_url(callback_query.from_user.id)
@@ -100,12 +110,12 @@ async def process_query_buy(callback_query: types.CallbackQuery):
 
 ############################################
 # ADMIN METHODS 
-
 async def send_payment_info(user_id, user_name): 
-    await bot.send_message(config.ADMIN_ID,
-                           msg.PAYMENT.format(str(user_id), user_name, str(user_id)), 
+    await bot.send_message(config.ID_ADMIN,
+                           msg.PAYMENT(str(user_id), user_name), 
                            reply_markup=kb.pay_confirm,
                            parse_mode=types.message.ParseMode.MARKDOWN_V2)
+
 
 @dp.callback_query_handler(lambda query: query.data == 'payment_accept')
 async def query_payment_accept(callback_query: types.CallbackQuery):
@@ -155,7 +165,8 @@ async def set_subscription_duration(message: types.Message, state: FSMContext):
         async with state.proxy() as data:
             data['duration'] = message.text
             user_id = data['user_id']
-        await db.add_user(state)
+        profile_url = await ex.add_user(user_id)
+        await db.add_user(state, profile_url)
         await state.finish()
         start_date = await db.get_start_date(user_id)
         end_date = (await db.get_exp_date(user_id))[0]
@@ -218,17 +229,16 @@ async def query_admin_panel_suspend(callback_query: types.CallbackQuery):
     await bot.edit_message_text(chat_id=callback_query.from_user.id,
                                 message_id=msg_bot_prev,
                                 text=msg.ADMIN_AWAIT_USER_ID)
-    await Unsubscribe.user_id.set()
+    await Suspend.user_id.set()
 
 
-@dp.message_handler(state=Unsubscribe.user_id)    
+@dp.message_handler(state=Suspend.user_id)    
 async def admin_panel_suspend_user_set_id(message: types.Message, state: FSMContext):
     if message.text.isdigit():
         user_id = message.text
         await state.finish()
         if await db.is_subscription_active(user_id):
             await db.suspend_user(int(user_id))
-            await ex.suspend_user(user_id)
 
             await bot.send_message(chat_id=message.chat.id,
                              text=msg.ADMIN_USER_SUSPENDED(user_id),
@@ -249,10 +259,10 @@ async def admin_panel_resume(callback_query: types.CallbackQuery):
     await bot.edit_message_text(chat_id=callback_query.from_user.id,
                                 message_id=msg_bot_prev,
                                 text=msg.ADMIN_AWAIT_USER_ID)
-    await Subscribe.user_id.set()
+    await Resume.user_id.set()
 
 
-@dp.message_handler(state=Subscribe.user_id)
+@dp.message_handler(state=Resume.user_id)
 async def admin_panel_resume_user_set_id(message: types.Message, state: FSMContext):
     if message.text.isdigit():
         user_id = message.text
@@ -267,6 +277,44 @@ async def admin_panel_resume_user_set_id(message: types.Message, state: FSMConte
             await db.resume_user(int(user_id))
             await ex.resume_user(user_id)
 
+            start_date = await db.get_start_date(user_id)
+            end_date = (await db.get_exp_date(user_id))[0]
+            await bot.send_message(chat_id=message.chat.id,
+                             text=msg.ADMIN_USER_RESUMED(user_id, start_date, end_date),
+                             parse_mode=types.message.ParseMode.MARKDOWN_V2)
+           
+    else:
+        await bot.send_message(chat_id=message.chat.id,
+                               text=msg.INPUT_NON_INTEGER)
+
+
+@dp.callback_query_handler(lambda query: query.data == 'admin_panel_new')
+async def admin_panel_new(callback_query: types.CallbackQuery):
+    msg_bot_prev = await db.get_msg_prev_bot(callback_query.from_user.id)
+
+    await bot.edit_message_text(chat_id=callback_query.from_user.id,
+                                message_id=msg_bot_prev,
+                                text=msg.ADMIN_AWAIT_USER_ID)
+    await NewUser.user_id.set()
+    
+    
+@dp.message_handler(state=NewUser.user_id)
+async def admin_panel_new_set_user_id(message: types.Message, state: FSMContext):
+    if message.text.isdigit():
+        user_id = message.text
+        await state.finish()
+        if await db.is_subscription_active(user_id):
+            start_date = await db.get_start_date(int(user_id))
+            end_date = (await db.get_exp_date(int(user_id)))[0]
+            await bot.send_message(chat_id=message.chat.id,
+                             text=msg.ADMIN_USER_ALREADY_ACTIVE(user_id, start_date, end_date),
+                             parse_mode=types.message.ParseMode.MARKDOWN_V2)
+        else:
+            await db.resume_user(int(user_id))
+            await ex.resume_user(user_id)
+
+            
+            
             await bot.send_message(chat_id=message.chat.id,
                              text=msg.ADMIN_USER_RESUMED(user_id),
                              parse_mode=types.message.ParseMode.MARKDOWN_V2)
@@ -275,7 +323,7 @@ async def admin_panel_resume_user_set_id(message: types.Message, state: FSMConte
         await bot.send_message(chat_id=message.chat.id,
                                text=msg.INPUT_NON_INTEGER)
 
-
+   
 ############################################
 
 @dp.callback_query_handler(lambda query: query.data == 'payment')
@@ -305,7 +353,7 @@ async def query_main_menu(callback_query: types.CallbackQuery):
                                         message_id=msg_bot_prev,
                                         reply_markup=kb.gen_inline(flag='main',
                                                                    active_subscription=await db.is_subscription_active(callback_query.from_user.id),
-                                                                   admin=callback_query.from_user.id == config.ADMIN_ID))
+                                                                   admin=callback_query.from_user.id == config.ID_ADMIN))
 
 
 @dp.message_handler()
@@ -321,18 +369,9 @@ async def unknown_command(message: types.Message):
                                      text=msg.UNKNOWN_COMMAND,
                                      reply_markup=kb.gen_inline(active_subscription=active_subscription))
 
-    await db.set_msg_prev_bot(msg_bot.chat.id, msg_bot.message_id)
+    await db.set_msg_prev_bot(chat_id=msg_bot.chat.id, 
+                              message_id=msg_bot.message_id)
 
 
-'''
-TODO:
-
-реализовать деактивацию ссылки пользователя
-реализовать напоминание об истечении подписки
-'''
-
-# run long-polling
 if __name__ == "__main__":
-    
-
-    executor.start_polling(dp, skip_updates=False, on_startup=on_startup)
+    executor.start_polling(dispatcher=dp, skip_updates=False, on_startup=on_startup) 

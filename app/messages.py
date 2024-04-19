@@ -4,7 +4,7 @@ HELP = """Помощь."""
 
 BUY = """Приобрести подписку."""
 
-def SUBCRIBER_ADDED(user_id, start_date, end_date):
+def SUBCRIBER_ADDED(user_id: int, start_date: list, end_date: list) -> str:
     string = 'Пользователь `{}` добавлен\.\n\nДата оплаты\: {}\nДата истечения подписки\: {}'
     return string.format(user_id, '\.'.join(start_date), '\.'.join(end_date))
 
@@ -12,7 +12,9 @@ INPUT_NON_INTEGER = '''Пожалуйста, введите число.'''
 
 UNKNOWN_COMMAND = '''Такой команды нет'''
 
-PAYMENT = """`{}` совершил оплату\.\n\n\nЮзернейм\: \@{}\nСсылка: tg\:\/\/user\?id\={}"""
+def PAYMENT(user_id: str, user_name: str) -> str:
+    string = """`{}` совершил оплату\.\n\n\nЮзернейм\: \@{}\nСсылка: tg\:\/\/user\?id\={}"""
+    return string.format(user_id, user_name, user_id)
 
 PAYMENT_IN_PROCESS = """Пожалуйста, подождите, пока я проверяю вашу оплату."""
 
