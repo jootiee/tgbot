@@ -9,5 +9,3 @@ DIR_EX = os.getenv('DIR_EX')
 PATH_EX = os.getenv('PATH_EX')
 
 PATH_DATABASE = os.getenv('PATH_DATABASE')
-
-COUNTDOWN_POLL = 1  # in days

@@ -56,7 +56,10 @@ async def on_startup(_):
 
 @dp.message_handler(commands=['start'])
 async def start(message: types.Message):
-    msg_bot_prev = await db.get_data(field='msg_prev', 
+    await bot.delete_message(chat_id=message.chat.id,
+                             message_id=message.message_id)
+                             
+    msg_bot_prev = await db.get_data(field='msg_bot_prev', 
                                      user_id=message.chat.id)
                                      
     if msg_bot_prev:
@@ -71,23 +74,24 @@ async def start(message: types.Message):
 
     msg_bot = await bot.send_message(message.chat.id, 
                                      msg.GREET, 
+                                     parse_mode=types.message.ParseMode.MARKDOWN_V2,
                                      reply_markup=kb.gen_inline(flag='main', 
                                                                 status=status,
-                                                                admin=(message.chat.id == config.ID_ADMIN)
-                                                                ))
+                                                                admin=(message.chat.id == config.ID_ADMIN)))
 
-    await db.set_msg_prev_bot(user_id=msg_bot.chat.id,
+    await db.set_msg_bot_prev(user_id=msg_bot.chat.id,
                               message_id=msg_bot.message_id)
 
 
 @dp.callback_query_handler(lambda query: query.data == 'help')
 async def process_callback_help(callback_query: types.CallbackQuery):
-    msg_bot_prev = await db.get_data(field='msg_prev',
+    msg_bot_prev = await db.get_data(field='msg_bot_prev',
                                      user_id=callback_query.from_user.id)
 
     await bot.edit_message_text(chat_id=callback_query.from_user.id, 
                                 message_id=msg_bot_prev, 
-                                text=msg.HELP)
+                                text=msg.HELP,
+                                parse_mode=types.message.ParseMode.MARKDOWN_V2)
 
     status = await db.get_data('status',
                                user_id=callback_query.from_user.id)
@@ -100,7 +104,7 @@ async def process_callback_help(callback_query: types.CallbackQuery):
 
 @dp.callback_query_handler(lambda query: query.data == 'status')
 async def process_query_status(callback_query: types.CallbackQuery):
-    msg_bot_prev = await db.get_data(field='msg_prev',
+    msg_bot_prev = await db.get_data(field='msg_bot_prev',
                                      user_id=callback_query.from_user.id)
 
     start_date = await db.get_data(field='start_date',
@@ -127,12 +131,13 @@ async def process_query_status(callback_query: types.CallbackQuery):
 
 @dp.callback_query_handler(lambda query: query.data == 'buy')
 async def process_query_buy(callback_query: types.CallbackQuery):
-    msg_bot_prev = await db.get_data(field='msg_prev',
+    msg_bot_prev = await db.get_data(field='msg_bot_prev',
                                      user_id=callback_query.from_user.id)
 
     await bot.edit_message_text(chat_id=callback_query.from_user.id,
                                 message_id=msg_bot_prev,
-                                text=msg.BUY)
+                                text=msg.BUY,
+                                parse_mode=types.message.ParseMode.MARKDOWN_V2)
 
     await bot.edit_message_reply_markup(chat_id=callback_query.from_user.id,
                                         message_id=msg_bot_prev,
@@ -142,38 +147,58 @@ async def process_query_buy(callback_query: types.CallbackQuery):
 ############################################
 # ADMIN METHODS 
 async def send_payment_info(user_id, user_name): 
-    await bot.send_message(chat_id=config.ID_ADMIN,
-                           text=msg.PAYMENT(str(user_id), user_name), 
-                           reply_markup=kb.pay_confirm,
-                           parse_mode=types.message.ParseMode.MARKDOWN_V2)
+    msg_bot_prev = await db.get_data(field='msg_bot_prev',
+                                     user_id=config.ID_ADMIN)
+    await bot.delete_message(chat_id=config.ID_ADMIN,
+                             message_id=msg_bot_prev)
+    
+    msg_bot = await bot.send_message(chat_id=config.ID_ADMIN,
+                                     text=msg.PAYMENT(str(user_id), user_name), 
+                                     reply_markup=kb.pay_confirm,                                    
+                                    parse_mode=types.message.ParseMode.MARKDOWN_V2)
+
+    
+    await db.set_msg_bot_prev(user_id=config.ID_ADMIN,
+                              message_id=msg_bot.message_id)
 
 
 @dp.callback_query_handler(lambda query: query.data == 'payment_accept')
 async def query_payment_accept(callback_query: types.CallbackQuery):
-    # user_id = int(callback_query.message.text.split()[0])
-    await bot.send_message(callback_query.from_user.id,
-                           msg.PAYMENT_SUBSCRIPTION_USER_ID)
+    msg_bot_prev = await db.get_data(field='msg_bot_prev',
+                                     user_id=config.ID_ADMIN)
 
+    await bot.edit_message_text(chat_id=config.ID_ADMIN,
+                                message_id=msg_bot_prev,
+                                text=msg.ADMIN_AWAIT_USER_ID)
+    
     await Subscriber.user_id.set()
     
    
 @dp.message_handler(state=Subscriber.user_id)
 async def set_subscriber_id(message: types.Message, state: FSMContext):
+    await bot.delete_message(chat_id=config.ID_ADMIN,
+                             message_id=message.message_id)
+
+    msg_bot_prev = await db.get_data(field='msg_bot_prev',
+                                    user_id=config.ID_ADMIN)
+
     if message.text.isdigit():
         async with state.proxy() as data:
             data['user_id'] = message.text 
 
-        await bot.send_message(chat_id=message.chat.id,
-                               text=msg.PAYMENT_SUBSCRIPTION_DURATION)
-
+        await bot.edit_message_text(chat_id=config.ID_ADMIN,
+                                    message_id=msg_bot_prev,
+                                    text=msg.ADMIN_AWAIT_SUBSCRIPTION_DURATION) 
+        
         await Subscriber.next()
     else:
-        await bot.send_message(chat_id=message.chat.id,
-                               text=msg.INPUT_NON_INTEGER)
+        await bot.edit_message_text(chat_id=message.chat.id,
+                                    message_id=msg_bot_prev,
+                                    text=msg.INPUT_NON_INTEGER)
 
 
 async def send_confirmation_message(user_id):
-    msg_bot_prev = await db.get_data(field='msg_prev',
+    msg_bot_prev = await db.get_data(field='msg_bot_prev',
                                      user_id=user_id)
     
     profile_url = await db.get_data(field='profile_url',
@@ -193,48 +218,64 @@ async def send_confirmation_message(user_id):
     await bot.delete_message(chat_id=user_id,
                              message_id=msg_bot_prev)
 
-    await db.set_msg_prev_bot(user_id=user_id,
+    await db.set_msg_bot_prev(user_id=user_id,
                               message_id=msg_bot.message_id)
 
     poller.edit_data(data=await db.get_data())
 
 
+
 @dp.message_handler(state=Subscriber.duration)
 async def set_subscription_duration(message: types.Message, state: FSMContext):
+    await bot.delete_message(chat_id=config.ID_ADMIN,
+                             message_id=message.message_id)
+
+    msg_bot_prev = await db.get_data(field='msg_bot_prev',
+                                     user_id=config.ID_ADMIN)
+
+
     if message.text.isdigit():
         async with state.proxy() as data:
             user_id = data['user_id']
 
         profile_url = await ex.add_user(user_id)
-        await db.add_user(user_id=user_id,
-                          state='active',
-                          duration=int(message.text),
-                          profile_url=profile_url)
-
+        
+        await db.activate_subscription(user_id=user_id, 
+                                       duration=int(message.text), 
+                                       profile_url=profile_url)
         await state.finish()
+
         start_date = await db.get_data(field='start_date',
                                        user_id=user_id)
 
         end_date = await db.get_data(field='end_date',
                                      user_id=user_id)
 
-        await bot.send_message(chat_id=message.chat.id,
-                               text=msg.SUBCRIBER_ADDED(user_id, start_date, end_date),
-                               parse_mode=types.message.ParseMode.MARKDOWN_V2)
+        await bot.edit_message_text(chat_id=message.chat.id,
+                                    message_id=msg_bot_prev,
+                                    text=msg.SUBCRIBER_ADDED(user_id, start_date, end_date),
+                                    parse_mode=types.message.ParseMode.MARKDOWN_V2)
 
+        await bot.edit_message_reply_markup(chat_id=config.ID_ADMIN,
+                                            message_id=msg_bot_prev,
+                                            reply_markup=kb.gen_inline(admin=True))
+        
+        
         await send_confirmation_message(user_id)
     else:
-        await bot.send_message(chat_id=message.chat.id,
-                               text=msg.INPUT_NON_INTEGER)
+        await bot.edit_message_text(chat_id=message.chat.id,
+                                    message_id=msg_bot_prev,
+                                    text=msg.INPUT_NON_INTEGER)
     
 
 @dp.callback_query_handler(lambda query: query.data == 'payment_decline')
 async def query_payment_decline(callback_query: types.CallbackQuery):
     user_id = int(callback_query.message.text.split()[0])
+
     msg_bot = await bot.send_message(chat_id=callback_query.from_user.id,
                                      text=msg.PAYMENT_DECLINE_ADMIN)
 
-    msg_bot_prev = await db.get_data(field='msg_prev',
+    msg_bot_prev = await db.get_data(field='msg_bot_prev',
                                      user_id=user_id)
 
     await bot.delete_message(chat_id=user_id,
@@ -244,24 +285,29 @@ async def query_payment_decline(callback_query: types.CallbackQuery):
                                      text=msg.PAYMENT_DECLINE_USER,
                                      reply_markup=kb.gen_inline())
 
-    await db.set_msg_prev_bot(chat_id=msg_bot.chat.id, 
+    await db.set_msg_bot_prev(chat_id=msg_bot.chat.id, 
                               message_id=msg_bot.message_id)
     
 
 @dp.callback_query_handler(lambda query: query.data == 'admin_panel_main')
 async def query_admin_panel(callback_query: types.CallbackQuery):
-    msg_bot = await bot.send_message(chat_id=callback_query.from_user.id,
-                     text=msg.ADMIN_PANEL,
-                     reply_markup=kb.gen_inline(flag='admin_main'))
+    msg_bot_prev = await db.get_data(field='msg_bot_prev',
+                               user_id=config.ID_ADMIN)
 
-    await db.set_msg_prev_bot(msg_bot.chat.id, msg_bot.message_id)
+    await bot.edit_message_text(chat_id=callback_query.from_user.id,
+                                message_id=msg_bot_prev,
+                                text=msg.ADMIN_PANEL)
+
+    await bot.edit_message_reply_markup(chat_id=config.ID_ADMIN,
+                                        message_id=msg_bot_prev,
+                                        reply_markup=kb.gen_inline(flag='admin_main'))
 
 
 @dp.callback_query_handler(lambda query: query.data == 'admin_panel_stats')
 async def query_admin_panel_stats(callback_query: types.CallbackQuery):
-    msg_bot_prev = await db.get_data(field='msg_prev',
+    msg_bot_prev = await db.get_data(field='msg_bot_prev',
                                      user_id=callback_query.from_user.id)
-    text_status = await db.get_subs_stats()
+    text_status = await ex.get_stats()
     
     await bot.edit_message_text(chat_id=callback_query.from_user.id,
                                 message_id=msg_bot_prev,
@@ -269,12 +315,12 @@ async def query_admin_panel_stats(callback_query: types.CallbackQuery):
     
     await bot.edit_message_reply_markup(chat_id=callback_query.from_user.id,
                                         message_id=msg_bot_prev,
-                                        reply_markup=kb.gen_inline(flag='admin_other'))
+                                        reply_markup=kb.gen_inline(admin=True))
 
 
 @dp.callback_query_handler(lambda query: query.data == 'admin_panel_suspend')
 async def query_admin_panel_suspend(callback_query: types.CallbackQuery):
-    msg_bot_prev = await db.get_data(field='msg_prev',
+    msg_bot_prev = await db.get_data(field='msg_bot_prev',
                                      user_id=callback_query.from_user.id)
     
     await bot.edit_message_text(chat_id=callback_query.from_user.id,
@@ -283,34 +329,56 @@ async def query_admin_panel_suspend(callback_query: types.CallbackQuery):
 
     await bot.edit_message_reply_markup(chat_id=callback_query.from_user.id,
                                         message_id=msg_bot_prev,
-                                        reply_markup=kb.gen_inline(flag='admin_other'))
+                                        reply_markup=kb.gen_inline(admin=True))
 
     await Suspend.user_id.set()
 
 
 @dp.message_handler(state=Suspend.user_id)    
 async def admin_panel_suspend_user_set_id(message: types.Message, state: FSMContext):
+    await bot.delete_message(chat_id=config.ID_ADMIN,
+                             message_id=message.message_id)
+    msg_bot_prev = await db.get_data(field='msg_bot_prev',
+                                     user_id=config.ID_ADMIN)
+
     if message.text.isdigit():
         user_id = message.text
         await state.finish()
-        if await db.is_subscription_active(user_id):
-            await db.suspend_user(int(user_id))
+        status = await db.get_data(field='status', user_id=user_id)
+        if status == 'active':
+            await db.set_user_status(user_id=int(user_id),
+                                     status='inactive')
             await ex.suspend_user(user_id=user_id)
-            await bot.send_message(chat_id=message.chat.id,
-                             text=msg.ADMIN_USER_SUSPENDED(user_id),
-                             parse_mode=types.message.ParseMode.MARKDOWN_V2)
-        else:
-            await bot.send_message(chat_id=message.chat.id,
-                             text=msg.ADMIN_USER_NOT_SUBSCRIBED(user_id),
-                             parse_mode=types.message.ParseMode.MARKDOWN_V2)
-    else:
-        await bot.send_message(chat_id=message.chat.id,
-                               text=msg.INPUT_NON_INTEGER)
+            await bot.edit_message_text(chat_id=config.ID_ADMIN,
+                                        message_id=msg_bot_prev,
+                                        text=msg.ADMIN_USER_SUSPENDED(user_id),
+                                        parse_mode=types.message.ParseMode.MARKDOWN_V2)
 
+            await bot.edit_message_reply_markup(chat_id=config.ID_ADMIN,
+                                                message_id=msg_bot_prev,
+                                                reply_markup=kb.gen_inline(admin=True))
+        else:
+            await bot.edit_message_text(chat_id=message.chat.id,
+                                        message_id=msg_bot_prev,
+                                        text=msg.ADMIN_USER_NOT_SUBSCRIBED(user_id),
+                                        parse_mode=types.message.ParseMode.MARKDOWN_V2)
+
+            await bot.edit_message_reply_markup(chat_id=config.ID_ADMIN,
+                                                message_id=msg_bot_prev,
+                                                reply_markup=kb.gen_inline(admin=True))
+    else:
+        await bot.edit_message_text(chat_id=message.chat.id,
+                                    message_id=msg_bot_prev,
+                                    text=msg.INPUT_NON_INTEGER)
+
+        await bot.edit_message_reply_markup(chat_id=config.ID_ADMIN,
+                                            message_id=msg_bot_prev,
+                                            reply_markup=kb.gen_inline(admin=True))
+ 
 
 @dp.callback_query_handler(lambda query: query.data == 'admin_panel_resume')
 async def admin_panel_resume(callback_query: types.CallbackQuery):
-    msg_bot_prev = await db.get_data(field='msg_prev',
+    msg_bot_prev = await db.get_data(field='msg_bot_prev',
                                      user_id=callback_query.from_user.id)
 
     await bot.edit_message_text(chat_id=callback_query.from_user.id,
@@ -321,34 +389,62 @@ async def admin_panel_resume(callback_query: types.CallbackQuery):
 
 @dp.message_handler(state=Resume.user_id)
 async def admin_panel_resume_user_set_id(message: types.Message, state: FSMContext):
+    await bot.delete_message(chat_id=config.ID_ADMIN,
+                             message_id=message.message_id)
+
+    msg_bot_prev = await db.get_data(field='msg_bot_prev',
+                                     user_id=config.ID_ADMIN)
+
     if message.text.isdigit():
         user_id = message.text
         await state.finish()
-        if await db.is_subscription_active(user_id):
+        status = await db.get_data(field='status',
+                             user_id=user_id)
+        if status == 'active':
             start_date = await db.get_start_date(int(user_id))
             end_date = (await db.get_exp_date(int(user_id)))[0]
-            await bot.send_message(chat_id=message.chat.id,
-                                   text=msg.ADMIN_USER_ALREADY_ACTIVE(user_id, start_date, end_date),
-                                   parse_mode=types.message.ParseMode.MARKDOWN_V2,
-                                   reply_markup=kb.gen(flag='admin_other'))
+
+            await bot.edit_message_text(chat_id=config.ID_ADMIN,
+                                        message_id=msg_bot_prev,
+                                        text=msg.ADMIN_USER_ALREADY_ACTIVE(user_id, start_date, end_date),
+                                        parse_mode=types.message.ParseMode.MARKDOWN_V2)
+
+            await bot.edit_message_reply_markup(chat_id=config.ID_ADMIN,
+                                                message_id=msg_bot_prev,
+                                                reply_markup=kb.gen_inline(admin=True))
+
         else:
-            await db.resume_user(int(user_id))
+            await db.set_user_status(user_id=int(user_id),
+                                     status='active')
+
             await ex.resume_user(user_id)
 
-            start_date = await db.get_start_date(user_id)
-            end_date = (await db.get_exp_date(user_id))[0]
-            await bot.send_message(chat_id=message.chat.id,
-                                   text=msg.ADMIN_USER_RESUMED(user_id, start_date, end_date),
-                                   parse_mode=types.message.ParseMode.MARKDOWN_V2,
-                                   reply_markup=kb.gen(flag='admin_other'))
+            start_date = await db.get_data(field='start_date',
+                                           user_id=user_id)
+            end_date = await db.get_data(field='end_date',
+                                         user_id=user_id)
+
+            await bot.edit_message_text(chat_id=config.ID_ADMIN,
+                                        message_id=msg_bot_prev,
+                                        text=msg.ADMIN_USER_RESUMED(user_id, start_date, end_date),
+                                        parse_mode=types.message.ParseMode.MARKDOWN_V2)
+
+            await bot.edit_message_reply_markup(chat_id=config.ID_ADMIN,
+                                                message_id=msg_bot_prev,
+                                                reply_markup=kb.gen_inline(admin=True))
     else:
-        await bot.send_message(chat_id=message.chat.id,
-                               text=msg.INPUT_NON_INTEGER)
+        await bot.edit_message_text(chat_id=config.ID_ADMIN,
+                                    message_id=msg_bot_prev,
+                                    text=msg.INPUT_NON_INTEGER)
+
+        await bot.edit_message_reply_markup(chat_id=config.ID_ADMIN,
+                                            message_id=msg_bot_prev,
+                                            reply_markup=kb.gen_inline(admin=True))
 
 
 @dp.callback_query_handler(lambda query: query.data == 'admin_panel_new')
 async def admin_panel_new(callback_query: types.CallbackQuery):
-    msg_bot_prev = await db.get_data(field='msg_prev',
+    msg_bot_prev = await db.get_data(field='msg_bot_prev',
                                      user_id=callback_query.from_user.id)
 
     await bot.edit_message_text(chat_id=callback_query.from_user.id,
@@ -359,39 +455,86 @@ async def admin_panel_new(callback_query: types.CallbackQuery):
     
 @dp.message_handler(state=NewUser.user_id)
 async def admin_panel_new_set_user_id(message: types.Message, state: FSMContext):
+    await bot.delete_message(chat_id=config.ID_ADMIN,
+                             message_id=message.message_id)
+
+    msg_bot_prev = await db.get_data(field='msg_bot_prev',
+                                     user_id=config.ID_ADMIN)
+
     if message.text.isdigit():
         user_id = message.text
         await state.finish()
-        if await db.is_subscription_active(user_id):
-            start_date = await db.get_start_date(int(user_id))
-            end_date = (await db.get_exp_date(int(user_id)))[0]
-            await bot.send_message(chat_id=message.chat.id,
-                             text=msg.ADMIN_USER_ALREADY_ACTIVE(user_id, start_date, end_date),
-                             parse_mode=types.message.ParseMode.MARKDOWN_V2,
-                             reply_markup=kb.gen(flag='admin_other'))
+        status = await db.get_data(field='status', user_id=int(user_id))
+        if status == 'active':
+            start_date = await db.get_data(field='start_date',
+                                           user_id=int(user_id))
+
+            end_date = await db.get_data(field='end_date',
+                                         user_id=int(user_id))
+
+            await bot.edit_message_text(chat_id=config.ID_ADMIN,
+                                        message_id=msg_bot_prev,
+                                        text=msg.ADMIN_USER_ALREADY_ACTIVE(user_id, start_date, end_date),
+                                        parse_mode=types.message.ParseMode.MARKDOWN_V2)
+
+            await bot.edit_message_reply_markup(chat_id=config.ID_ADMIN,
+                                                message_id=msg_bot_prev,
+                                                reply_markup=kb.gen_inline(admin=True))
         else:
-            await db.resume_user(int(user_id))
+            await db.set_user_status(user_id=user_id,
+                                     status='active')
             await ex.resume_user(user_id)
 
+            start_date = await db.get_data(field='start_date',
+                                           user_id=user_id)
+
+            end_date = await db.get_data(field='end_date',
+                                         user_id=user_id)
             
+            await bot.edit_message_text(chat_id=config.ID_ADMIN,
+                                        message_id=msg_bot_prev,
+                                        text=msg.ADMIN_USER_RESUMED(user_id=user_id,
+                                                                    start_date=start_date,
+                                                                    end_date=end_date),
+                                        parse_mode=types.message.ParseMode.MARKDOWN_V2)
             
-            await bot.send_message(chat_id=message.chat.id,
-                             text=msg.ADMIN_USER_RESUMED(user_id),
-                             parse_mode=types.message.ParseMode.MARKDOWN_V2,
-                             reply_markup=kb.gen(flag='admin_other'))
+            await bot.edit_message_reply_markup(chat_id=config.ID_ADMIN,
+                                                message_id=msg_bot_prev,
+                                                reply_markup=kb.gen_inline(admin=True))
            
     else:
-        await bot.send_message(chat_id=message.chat.id,
-                               text=msg.INPUT_NON_INTEGER)
+        await bot.edit_message_text(chat_id=config.ID_ADMIN,
+                                    message_id=msg_bot_prev,
+                                    text=msg.INPUT_NON_INTEGER)
+        
+        await bot.edit_message_reply_markup(chat_id=config.ID_ADMIN,
+                                            message_id=msg_bot_prev,
+                                            reply_markup=kb.gen_inline(admin=True))
 
-   
+@dp.callback_query_handler(lambda query: query.data == 'admin_panel_all_users')   
+async def admin_panel_all_users(callback_query: types.CallbackQuery):
+    msg_bot_prev = await db.get_data(field='msg_bot_prev',
+                                     user_id=config.ID_ADMIN)
+
+    data = await db.get_data()
+
+    await bot.edit_message_text(chat_id=config.ID_ADMIN,
+                                message_id=msg_bot_prev,
+                                text='\n'.join([msg.ADMIN_USER_DATA(elem) for elem in data]),
+                                parse_mode=types.message.ParseMode.MARKDOWN_V2)
+
+    await bot.edit_message_reply_markup(chat_id=config.ID_ADMIN,
+                                        message_id=msg_bot_prev,
+                                        reply_markup=kb.gen_inline(admin=True))
+
+    
 ############################################
 
 @dp.callback_query_handler(lambda query: query.data == 'payment')
 async def query_payment(callback_query: types.CallbackQuery):
     await send_payment_info(callback_query.from_user.id, callback_query.from_user.username)
 
-    msg_bot_prev = await db.get_data(field='msg_prev',
+    msg_bot_prev = await db.get_data(field='msg_bot_prev',
                                      user_id=callback_query.from_user.id)
 
     await bot.edit_message_text(chat_id=callback_query.from_user.id,
@@ -408,12 +551,13 @@ async def query_payment(callback_query: types.CallbackQuery):
 
 @dp.callback_query_handler(lambda query: query.data == 'main_menu')
 async def query_main_menu(callback_query: types.CallbackQuery):
-    msg_bot_prev = await db.get_data(field='msg_prev',
+    msg_bot_prev = await db.get_data(field='msg_bot_prev',
                                      user_id=callback_query.from_user.id)
 
     await bot.edit_message_text(chat_id=callback_query.from_user.id,
                                 message_id=msg_bot_prev,
-                                text=msg.GREET)
+                                text=msg.GREET,
+                                parse_mode=types.message.ParseMode.MARKDOWN_V2)
 
     status = await db.get_data(field='status',
                                user_id=callback_query.from_user.id)
@@ -421,13 +565,13 @@ async def query_main_menu(callback_query: types.CallbackQuery):
     await bot.edit_message_reply_markup(chat_id=callback_query.from_user.id,
                                         message_id=msg_bot_prev,
                                         reply_markup=kb.gen_inline(flag='main',
-                                        status=status,
-                                        admin=callback_query.from_user.id == config.ID_ADMIN))
+                                                                   status=status,
+                                                                   admin=callback_query.from_user.id == config.ID_ADMIN))
 
 
 @dp.message_handler()
 async def unknown_command(message: types.Message):
-    msg_bot_prev = await db.get_data(field='msg_prev',
+    msg_bot_prev = await db.get_data(field='msg_bot_prev',
                                      user_id=message.chat.id)
 
     await bot.delete_message(chat_id=message.chat.id,
@@ -440,13 +584,12 @@ async def unknown_command(message: types.Message):
                                      text=msg.UNKNOWN_COMMAND,
                                      reply_markup=kb.gen_inline(status=status))
 
-    await db.set_msg_prev_bot(chat_id=msg_bot.chat.id, 
+    await db.set_msg_bot_prev(chat_id=msg_bot.chat.id, 
                               message_id=msg_bot.message_id)
 
 """
 #TODO
 переделать клавиатуру
-после подтверждения оплаты не вносить новые данные в бд, а обновлять старые
 """
 
 

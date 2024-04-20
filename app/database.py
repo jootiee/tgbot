@@ -19,26 +19,25 @@ class Database:
                     )
                     ''')
         
-        self.cur.execute('''CREATE TABLE IF NOT EXISTS msg_prev_bot
+        self.cur.execute('''CREATE TABLE IF NOT EXISTS msg_bot_prev
                     (
                         chat_id     INTEGER,
                         message_id  INTEGER
                     )
                     ''')
-        
+
         self.db.commit()
 
-    async def set_msg_prev_bot(self, user_id: int, message_id: int) -> None:
-        if await self.get_data(field='msg_prev', user_id=user_id):
-            self.cur.execute('''UPDATE msg_prev_bot SET message_id = (?) WHERE chat_id == (?)
+    async def set_msg_bot_prev(self, user_id: int, message_id: int) -> None:
+        if await self.get_data(field='msg_bot_prev', user_id=user_id):
+            self.cur.execute('''UPDATE msg_bot_prev SET message_id = (?) WHERE chat_id == (?)
                         ''', (message_id, user_id))
         else:
             self.cur.execute('''
-                        INSERT INTO msg_prev_bot (chat_id, message_id) VALUES (?, ?)
+                        INSERT INTO msg_bot_prev (chat_id, message_id) VALUES (?, ?)
                         ''',
                         (user_id, message_id))
         self.db.commit()
-
 
     async def add_user(self, user_id: int, state='', duration=0, profile_url='') -> None:
         start_date = (dt.datetime.now()).strftime('%d-%m-%Y')
@@ -48,19 +47,18 @@ class Database:
                     ''',
                     (user_id, state, start_date, end_date, profile_url))
         self.db.commit()
-
-    async def suspend_user(self, user_id: int) -> None:
-        self.cur.execute('UPDATE users SET active_subscription = 0 WHERE user_id == ?', (user_id,))
-        self.db.commit()
-
-    async def resume_user(self, user_id: int) -> None:
-        self.cur.execute('UPDATE users SET active_subscription = 1 WHERE user_id == ?', (user_id,))
+    
+    async def activate_subscription(self, user_id: int, duration: int, profile_url: str):
+        start_date = dt.datetime.now().strftime('%d-%m-%Y')
+        end_date = (dt.datetime.now() + dt.timedelta(days=duration + 1)).strftime('%d-%m-%Y')
+        self.cur.execute('UPDATE users SET status = ?, start_date = ?, end_date = ?, profile_url = ? WHERE user_id == ?',
+                         ('active', start_date, end_date, profile_url, user_id))
         self.db.commit()
         
     async def get_data(self, field='', user_id=0):
         result = ''
-        if field == 'msg_prev':
-            message_id = self.cur.execute('SELECT * FROM msg_prev_bot WHERE chat_id == {}'.format(user_id)).fetchone()
+        if field == 'msg_bot_prev':
+            message_id = self.cur.execute('SELECT * FROM msg_bot_prev WHERE chat_id == {}'.format(user_id)).fetchone()
             result = message_id[1] if message_id else 0
         elif field == 'user_exists':
             result = bool(self.cur.execute('SELECT * FROM users WHERE user_id == ?', (user_id,)).fetchone())
