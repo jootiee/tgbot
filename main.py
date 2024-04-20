@@ -15,13 +15,19 @@ from aiogram.utils.exceptions import MessageToEditNotFound, MessageToDeleteNotFo
 
 logging.basicConfig(level=logging.INFO)
 
-bot = Bot(token=config.TOKEN, disable_web_page_preview=True)
+bot = Bot(token=config.TOKEN,
+          disable_web_page_preview=True)
+
 storage = MemoryStorage()
-dp = Dispatcher(bot, storage=storage)
-ex = EXBridge(config.PATH_EX, config.DIR_EX)
-db = Database(config.PATH_DATABASE, ex)
-poller = Poller(countdown=config.COUNTDOWN_POLL, 
-                bot=bot)
+dp = Dispatcher(bot=bot, storage=storage)
+
+ex = EXBridge(PATH_EX=config.PATH_EX,
+              DIR_EX=config.DIR_EX)
+
+db = Database(PATH_DATABASE=config.PATH_DATABASE,
+              ex=ex)
+
+poller = Poller(bot=bot)
 
 
 class Subscriber(StatesGroup):
@@ -45,6 +51,7 @@ class NewUser(StatesGroup):
 async def on_startup(_):
     poller.edit_data(await db.get_data())
     asyncio.create_task(poller.check())
+    logging.info('Polling started')
     
 
 @dp.message_handler(commands=['start'])
@@ -52,7 +59,9 @@ async def start(message: types.Message):
     msg_bot_prev = await db.get_msg_prev_bot(message.chat.id)
     if msg_bot_prev:
         try:
-            await bot.delete_message(chat_id=message.chat.id, message_id=msg_bot_prev)
+            await bot.delete_message(chat_id=message.chat.id,
+                                     message_id=msg_bot_prev)
+
         except MessageToDeleteNotFound:
             logging.error('aiogram.utils.exceptions.MessageToDeleteNotFound: User has already deleted this message.')
     
@@ -62,7 +71,9 @@ async def start(message: types.Message):
                                                                 active_subscription=await db.is_subscription_active(message.chat.id),
                                                                 admin=(message.chat.id == config.ID_ADMIN)
                                                                 ))
-    await db.set_msg_prev_bot(msg_bot.chat.id, msg_bot.message_id)
+
+    await db.set_msg_prev_bot(chat_id=msg_bot.chat.id,
+                              message_id=msg_bot.message_id)
 
 
 @dp.callback_query_handler(lambda query: query.data == 'help')
@@ -71,7 +82,9 @@ async def process_callback_help(callback_query: types.CallbackQuery):
     await bot.edit_message_text(chat_id=callback_query.from_user.id, 
                                 message_id=msg_bot_prev, 
                                 text=msg.HELP)
-    active_subscription = await db.is_subscription_active(callback_query.from_user.id)
+
+    active_subscription = await db.is_subscription_active(user_id=callback_query.from_user.id)
+
     await bot.edit_message_reply_markup(chat_id=callback_query.from_user.id,
                                         message_id=msg_bot_prev,
                                         reply_markup=kb.gen_inline(flag='help', 
@@ -80,10 +93,10 @@ async def process_callback_help(callback_query: types.CallbackQuery):
 
 @dp.callback_query_handler(lambda query: query.data == 'status')
 async def process_query_status(callback_query: types.CallbackQuery):
-    msg_bot_prev = await db.get_msg_prev_bot(callback_query.from_user.id)
-    start_date = await db.get_start_date(callback_query.from_user.id), 
-    end_date, days_left = await db.get_exp_date(callback_query.from_user.id)
-    profile_url = await db.get_profile_url(callback_query.from_user.id)
+    msg_bot_prev = await db.get_msg_prev_bot(chat_id=callback_query.from_user.id)
+    start_date = await db.get_start_date(user_id=callback_query.from_user.id), 
+    end_date, days_left = await db.get_exp_date(user_id=callback_query.from_user.id)
+    profile_url = await db.get_profile_url(user_id=callback_query.from_user.id)
 
     await bot.edit_message_text(chat_id=callback_query.from_user.id,
                                 message_id=msg_bot_prev,
@@ -97,7 +110,7 @@ async def process_query_status(callback_query: types.CallbackQuery):
 
 @dp.callback_query_handler(lambda query: query.data == 'buy')
 async def process_query_buy(callback_query: types.CallbackQuery):
-    msg_bot_prev = await db.get_msg_prev_bot(callback_query.from_user.id)
+    msg_bot_prev = await db.get_msg_prev_bot(chat_id=callback_query.from_user.id)
 
     await bot.edit_message_text(chat_id=callback_query.from_user.id,
                                 message_id=msg_bot_prev,
@@ -111,16 +124,15 @@ async def process_query_buy(callback_query: types.CallbackQuery):
 ############################################
 # ADMIN METHODS 
 async def send_payment_info(user_id, user_name): 
-    await bot.send_message(config.ID_ADMIN,
-                           msg.PAYMENT(str(user_id), user_name), 
+    await bot.send_message(chat_id=config.ID_ADMIN,
+                           text=msg.PAYMENT(str(user_id), user_name), 
                            reply_markup=kb.pay_confirm,
                            parse_mode=types.message.ParseMode.MARKDOWN_V2)
 
 
 @dp.callback_query_handler(lambda query: query.data == 'payment_accept')
 async def query_payment_accept(callback_query: types.CallbackQuery):
-    user_id = int(callback_query.message.text.split()[0])
-
+    # user_id = int(callback_query.message.text.split()[0])
     await bot.send_message(callback_query.from_user.id,
                            msg.PAYMENT_SUBSCRIPTION_USER_ID)
 
@@ -156,7 +168,10 @@ async def send_confirmation_message(user_id):
     await bot.delete_message(chat_id=user_id,
                              message_id=msg_bot_prev)
 
-    await db.set_msg_prev_bot(user_id, msg_bot.message_id)
+    await db.set_msg_prev_bot(user_id=user_id,
+                              message_id=msg_bot.message_id)
+
+    poller.edit_data(data=await db.get_data())
 
 
 @dp.message_handler(state=Subscriber.duration)
@@ -196,7 +211,8 @@ async def query_payment_decline(callback_query: types.CallbackQuery):
                                      text=msg.PAYMENT_DECLINE_USER,
                                      reply_markup=kb.gen_inline())
 
-    await db.set_msg_prev_bot(msg_bot.chat.id, msg_bot.message_id)
+    await db.set_msg_prev_bot(chat_id=msg_bot.chat.id, 
+                              message_id=msg_bot.message_id)
     
 
 @dp.callback_query_handler(lambda query: query.data == 'admin_panel_main')
@@ -371,6 +387,12 @@ async def unknown_command(message: types.Message):
 
     await db.set_msg_prev_bot(chat_id=msg_bot.chat.id, 
                               message_id=msg_bot.message_id)
+
+"""
+#TODO
+добавить пользователю статус после нажатия кнопки "я оплатил"
+переделать клавиатуру
+"""
 
 
 if __name__ == "__main__":
