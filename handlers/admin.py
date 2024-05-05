@@ -2,7 +2,7 @@ from aiogram import types
 from aiogram.dispatcher import FSMContext
 
 from loader import dp, db, ex
-from app import states
+from states import Subscriber, Suspend, Resume, NewUser
 import keyboards as kb
 
 #TODO
@@ -26,14 +26,14 @@ async def send_payment_info(user_id, user_name):
 #TODO: pass user_id through callback_query
 @dp.callback_query_handler(lambda query: query.data and query.data.startswith('payment_accept'))
 async def query_payment_accept(callback_query: types.CallbackQuery, state: FSMContext):
-    text = 'Введите длительность подписки:'
+    text = 'Введите длительность подписки\:'
 
     await callback_query.message.edit_text(text)
     
-    await state.set_state(states.Subscriber.user_id)
+    await state.set_state(Subscriber.user_id)
     user_id = callback_query.data.split(':')[1]
     await state.update_data(user_id=user_id)
-    await states.Subscriber.next()
+    await Subscriber.next()
     
 #TODO
 '''
@@ -65,8 +65,9 @@ async def send_confirmation_message(user_id):
 '''
 
 
-@dp.message_handler(state=states.Subscriber.duration)
+@dp.message_handler(state=Subscriber.duration)
 async def set_subscription_duration(message: types.Message, state: FSMContext):
+    await message.delete()
     if message.text.isdigit():
         async with state.proxy() as data:
             user_id = data['user_id']
@@ -109,7 +110,7 @@ async def query_payment_decline(callback_query: types.CallbackQuery):
 
 @dp.callback_query_handler(lambda query: query.data == 'admin_panel_main')
 async def query_admin_panel(callback_query: types.CallbackQuery):
-    text = 'Админ панель.'
+    text = 'Админ панель\.'
     await callback_query.message.edit_text(text)
 
     await callback_query.message.edit_reply_markup(reply_markup=kb.gen_inline(flag='admin_main'))
@@ -127,16 +128,17 @@ async def query_admin_panel_stats(callback_query: types.CallbackQuery):
 @dp.callback_query_handler(lambda query: query.data == 'admin_panel_suspend')
 async def query_admin_panel_suspend(callback_query: types.CallbackQuery):
     #TODO: выводить пользователей с активной подпиской
-    text = 'Введите ID пользователя, подписку которого хотите приостановить:'
+    text = 'Введите ID пользователя\, подписку которого хотите приостановить\:'
     await callback_query.message.edit_text(text)
 
-    await callback_query.message.edit_reply_markup(reply_markup=types.ReplyKeyboardRemove())
+    # await callback_query.message.edit_reply_markup(reply_markup=types.ReplyKeyboardRemove())
 
-    await states.Suspend.user_id.set()
+    await Suspend.user_id.set()
 
 
-@dp.message_handler(state=states.Suspend.user_id)    
+@dp.message_handler(state=Suspend.user_id)    
 async def admin_panel_suspend_user_set_id(message: types.Message, state: FSMContext):
+    await message.delete()
     if message.text.isdigit():
         user_id = message.text
         await state.finish()
@@ -155,7 +157,7 @@ async def admin_panel_suspend_user_set_id(message: types.Message, state: FSMCont
             await message.answer(text,
                                  reply_markup=kb.gen_inline(admin=True))
     else:
-        text = 'Пожалуйста, введите число:'
+        text = 'Пожалуйста\, введите число\:'
 
         await message.answer(text,
                              reply_markup=kb.gen_inline(admin=True))
@@ -164,16 +166,17 @@ async def admin_panel_suspend_user_set_id(message: types.Message, state: FSMCont
 @dp.callback_query_handler(lambda query: query.data == 'admin_panel_resume')
 async def query_admin_panel_resume(callback_query: types.CallbackQuery):
     #TODO: выводить пользователей с приостановленной подпиской
-    text = 'Введите ID пользователя, подписку которого хотите возобновить:'
+    text = 'Введите ID пользователя\, подписку которого хотите возобновить\:'
     await callback_query.message.edit_text(text)
 
     await callback_query.message.edit_reply_markup(reply_markup=types.ReplyKeyboardRemove())
 
-    await states.Resume.user_id.set()
+    await Resume.user_id.set()
 
 
-@dp.message_handler(state=states.Resume.user_id)    
+@dp.message_handler(state=Resume.user_id)    
 async def admin_panel_resume_user_set_id(message: types.Message, state: FSMContext):
+    await message.delete()
     if message.text.isdigit():
         user_id = message.text
         await state.finish()
@@ -192,7 +195,7 @@ async def admin_panel_resume_user_set_id(message: types.Message, state: FSMConte
             await message.answer(text,
                                  reply_markup=kb.gen_inline(admin=True))
     else:
-        text = 'Пожалуйста, введите число:'
+        text = 'Пожалуйста\, введите число\:'
 
         await message.answer(text,
                              reply_markup=kb.gen_inline(admin=True))
@@ -202,11 +205,11 @@ async def admin_panel_resume_user_set_id(message: types.Message, state: FSMConte
 async def admin_panel_new(callback_query: types.CallbackQuery):
     text = 'Введите ID пользователя\, которому хотите выдать подписку\:'
     await callback_query.message.edit_text(text)
-    await states.NewUser.user_id.set()
+    await NewUser.user_id.set()
     
 #TODO: 
 '''
-@dp.message_handler(state=states.NewUser.user_id)
+@dp.message_handler(state=NewUser.user_id)
 async def admin_panel_new_set_user_id(message: types.Message, state: FSMContext):
     if message.text.isdigit():
         user_id = message.text

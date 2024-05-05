@@ -1,12 +1,11 @@
 import asyncio
 
 from loader import bot, storage, db, poller, logging
-from utils.poller import Poller
 
 
 async def on_startup(dp):
     from utils.notify_admins import on_startup_notify
-    await asyncio.sleep(10)
+    await asyncio.sleep(5)
     await on_startup_notify(dp)
     poller.edit_data(await db.get_data())
     asyncio.create_task(poller.check())
