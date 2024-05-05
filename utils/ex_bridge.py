@@ -1,5 +1,4 @@
 import subprocess
-from time import sleep
 
 class EXBridge:
     def __init__(self, PATH_EX: str, DIR_EX: str):
@@ -36,14 +35,3 @@ class EXBridge:
     async def get_stats(self) -> str:
         res = subprocess.check_output([self.executable, 'stats'], cwd=self.dir).decode()
         return res
-
-
-async def main():
-    ex = EXBridge()
-    data = await ex.get_stats()
-    print(data)
-
-
-if __name__ == '__main__':
-    import asyncio
-    asyncio.run(main())
