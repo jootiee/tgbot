@@ -1,31 +1,31 @@
-from backend.core.models.base import Base
+from core.models.base import Base
 
-from typing import TYPE_CHECKING
-from sqlalchemy import Enum, Datetime
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Enum, DateTime
+from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
 import enum
 
-# if TYPE_CHECKING:
-    # from backend.core.models.event import Event
 
 class State(str, enum.Enum):
     active = "Active"
     inactive = "Inactive"
-    suspended = "Suspened"
+    suspended = "Suspended"
 
 
 class User(Base):
     tg_id: Mapped[int] = mapped_column(
         unique=True, 
-        nullable=False)
+        nullable=False,
+    )
 
     start_date: Mapped[datetime] = mapped_column(
-        Datetime(timezone=True)
+        DateTime(timezone=True),
+        nullable=True
     )
 
     expiration_date: Mapped[datetime] = mapped_column(
-        Datetime(timezone=True)
+        DateTime(timezone=True),
+        nullable=True
     )
 
     status: Mapped[str] = mapped_column(

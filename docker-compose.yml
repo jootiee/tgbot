@@ -1,0 +1,54 @@
+networks:
+  dev:
+
+services:
+  database:
+    image: postgres
+    container_name: database
+
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"    
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin}
+      POSTGRES_DB: ${DB_NAME:-db}
+
+    networks:
+      - dev
+  
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    # volumes:
+      #  - pgadmin:/var/lib/pgadmin
+
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    networks:
+      - dev
+    restart: unless-stopped
+
+
+
+  # backend:
+    # build:
+      # context: ./backend
+      # target: ${TARGET:-prod}
+    # container_name: backend_container
+
+    # ports:
+      # - "${SWAGGER_PORT:-8000}:8000"
+    # environment:
+      # DB_PATH: postgresql+asyncpg://postgres:admin@database/${DB_NAME:-db}
+      # DB_ECHO: 1 
+      # API_PATH: /api
+    # depends_on:
+      # - database
+    # restart: always
+
+    # networks:
+      # - dev
