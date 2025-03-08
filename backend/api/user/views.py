@@ -22,31 +22,34 @@ async def create_user(
 ):
     return await crud.create_user(session=session, user_in=user_in)
 
-@router.get('/{tg_id}/', response_model=User)
-async def get_user_by_tg_id(
-        tg_id: int,
+@router.get('/{id}/', response_model=User)
+async def get_user_by_id(
+        id: int,
         session: AsyncSession = Depends(db_helper.session_dependency),
 ):
-    return await crud.get_user_by_tg_id(session=session, tg_id=tg_id)
+    user = await crud.get_user_by_id(session=session, id=id)
+    if user is None:
+        raise HTTPException(status_code=404, detail='User not found')
+    return user
 
-@router.delete("/{tg_id}/", response_model=StrictBool)
-async def delete_user_by_tg_id(
-    tg_id: int,
+@router.delete("/{id}/", response_model=StrictBool)
+async def delete_user_by_id(
+    id: int,
     session: AsyncSession = Depends(db_helper.session_dependency),
 ):
-    result = await crud.delete_user_by_tg_id(session=session, tg_id=tg_id)
-    if not result:
+    result = await crud.delete_user_by_id(session=session, id=id)
+    if result is False:
         raise HTTPException(status_code=404, detail='User not found')
+    return result
 
-@router.patch("/{tg_id}/", response_model=User)
-async def update_user_by_tg_id(
-    tg_id: int,
+@router.patch("/{id}/", response_model=User)
+async def update_user_by_id(
+    id: int,
     user_in: UserUpdate,
     session: AsyncSession = Depends(db_helper.session_dependency),
 ):
-    result = await crud.update_user_by_tg_id(session=session, tg_id=tg_id, user_in=user_in)
+    result = await crud.update_user_by_id(session=session, id=id, user_in=user_in)
     if not result:
         raise HTTPException(status_code=404, detail='User not found')
 
     return result
-    

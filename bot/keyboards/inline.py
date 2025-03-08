@@ -19,46 +19,35 @@ BUTTONS = {'admin_panel_main':      {"text": 'Админ панель',         
 }
 
 
-def gen_inline(flag='other', status='inactive', admin=False):
+def gen_inline(flag='other', admin=False):
     reply_kb = InlineKeyboardBuilder()
     reply_kb.adjust(1)
-
-    if flag == 'main':
-        if admin:
-            reply_kb.button(**BUTTONS['admin_panel_main'])
-        else:
-            if status == 'active':
-                reply_kb.button(**BUTTONS['status'])
-                
-            if status != 'in_process':
-                reply_kb.button(**BUTTONS['buy'])
-        reply_kb.button(**BUTTONS['help'])
-
-    elif flag == 'help':
-        if status == "active":
-            reply_kb.button(**BUTTONS['main_menu_active'])                 
-        else:
-            reply_kb.button(**BUTTONS['main_menu'])
-
-    elif flag == 'status':
-        reply_kb.button(**BUTTONS['help'])
-
-    elif flag == 'admin_main':
-        reply_kb.button(**BUTTONS['admin_panel_stats'])
-        reply_kb.button(**BUTTONS['admin_panel_all_users'])
-        reply_kb.button(**BUTTONS['admin_panel_new'])
-        reply_kb.button(**BUTTONS['admin_panel_resume'])
-        reply_kb.button(**BUTTONS['admin_panel_suspend'])
-        reply_kb.button(**BUTTONS['main_menu'])
-    else:
-        if status == "active":
-            reply_kb.button(**BUTTONS['main_menu_active'])
-        else:
-            reply_kb.button(**BUTTONS['main_menu'])
-        if admin == True:
-            reply_kb.button(**BUTTONS['admin_panel_main'])
-        else:
+    match flag:
+        case "main":
+            if admin:
+                reply_kb.button(**BUTTONS['admin_panel_main'])
+            reply_kb.button(**BUTTONS['buy'])
             reply_kb.button(**BUTTONS['help'])
+
+        case 'help':
+            reply_kb.button(**BUTTONS['main_menu'])
+
+        case 'status':
+            reply_kb.button(**BUTTONS['help'])
+
+        case 'admin_main':
+            reply_kb.button(**BUTTONS['admin_panel_stats'])
+            reply_kb.button(**BUTTONS['admin_panel_all_users'])
+            reply_kb.button(**BUTTONS['admin_panel_new'])
+            reply_kb.button(**BUTTONS['admin_panel_resume'])
+            reply_kb.button(**BUTTONS['admin_panel_suspend'])
+            reply_kb.button(**BUTTONS['main_menu'])
+        case _:
+            reply_kb.button(**BUTTONS['main_menu'])
+            if admin:
+                reply_kb.button(**BUTTONS['admin_panel_main'])
+            else:
+                reply_kb.button(**BUTTONS['help'])
     
     return reply_kb.as_markup()
 

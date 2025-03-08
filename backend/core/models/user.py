@@ -13,7 +13,13 @@ class State(str, enum.Enum):
 
 
 class User(Base):
-    tg_id: Mapped[int] = mapped_column(
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        unique=True,
+        nullable=False
+    )
+    
+    username: Mapped[str] = mapped_column(
         unique=True, 
         nullable=False,
     )
@@ -33,5 +39,5 @@ class User(Base):
     )
 
     profile_url: Mapped[str] = mapped_column(
-        nullable=False
+        nullable=True
     )

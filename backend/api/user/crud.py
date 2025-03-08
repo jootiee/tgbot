@@ -14,12 +14,12 @@ async def get_users(
     users = result.scalars().all()
     return list(users)
 
-async def get_user_by_tg_id(
+async def get_user_by_id(
         session: AsyncSession,
-        tg_id: int
+        id: int
 ) -> User | None:
-    result = await session.execute(select(User).where(User.tg_id == tg_id))
-    user = result.scalar_one()
+    result = await session.execute(select(User).where(User.id == id))
+    user = result.scalar_one_or_none()
     return user
 
 async def create_user(
@@ -27,19 +27,19 @@ async def create_user(
         user_in: UserCreate
 ) -> User:
     user = User(
-        tg_id=user_in.tg_id,
+        id=user_in.id,
+        username=user_in.username,
         status=user_in.status,
-        profile_url=user_in.profile_url
     )
     session.add(user)
     await session.commit()
     return user
 
-async def delete_user_by_tg_id(
+async def delete_user_by_id(
         session: AsyncSession,
-        tg_id: int
+        id: int
 ) -> bool:
-    result = await session.execute(select(User).where(User.tg_id == tg_id))
+    result = await session.execute(select(User).where(User.id == id))
     user = result.scalar_one_or_none()
     if user is None:
         return False
@@ -47,12 +47,12 @@ async def delete_user_by_tg_id(
     await session.commit()
     return True
 
-async def update_user_by_tg_id(
+async def update_user_by_id(
         session: AsyncSession,
-        tg_id: int,
+        id: int,
         user_in: UserUpdate,
 ) -> User | None:
-    result = await session.execute(select(User).where(User.tg_id == tg_id))
+    result = await session.execute(select(User).where(User.id == id))
     user = result.scalar_one_or_none()
     if user is None:
         return user
