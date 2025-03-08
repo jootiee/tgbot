@@ -24,4 +24,5 @@ class User(UserBase):
     model_config = ConfigDict(from_attributes=True)
     start_date: Optional[datetime]
     expiration_date: Optional[datetime]
+    profile_url: Optional[str]
     

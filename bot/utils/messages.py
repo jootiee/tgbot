@@ -1,23 +1,55 @@
 import datetime
 from dateutil.relativedelta import relativedelta
 
+GUIDE_URL = "https\://google\.com/"
+
+months = {
+    1:  "января",
+    2:  "февраля",
+    3:  "марта",
+    4:  "апреля",
+    5:  "мая",
+    6:  "июня",
+    7:  "июля",
+    8:  "августа",
+    9:  "сентября",
+    10: "октября",
+    11: "ноября",
+    12: "декабря"
+}
+
 main_unsubscribed = (
-    '''Привет\!\n
-    asdads'''
+    '''Привет\!
+    Просто сервис\.'''
 )
+
+buy_info = """Для покупки введите команду \/buy и через пробел целым числом укажите количество дней\.
+Один день подписки \- одна звезда\."""
 
 help = "По вопросом писать \@jootiee\."
 
-purchase = "Для приобретения подписки пишите в личку @jootiee\.\nПосле оплаты\, нажмите на кнопку *Я оплатил* снизу"
-
 unknown_query = "Неизвестный запрос\. Проверьте корректность ввода и попробуйте снова\."
 
-main_subscribed = """Подписка активна\.\n{} {} \({}\)\n\nСсылка на гайд\: {}\n\nСсылка на профиль\: {}"""
+def pretty_date(
+    date: str
+) -> str:
+    "2025-03-09T00:16:27Z"
+    
+    date_pretty, time_pretty = date[:16].split("T")
+    date_pretty = date_pretty.split("-")[::-1]
+    time_pretty = time_pretty.replace(":", "\:")
+    result = f"{str(int(date_pretty[0]))} {months[int(date_pretty[1])]} {date_pretty[2]}\, {time_pretty}"
+    return result
 
-# TODO: вынести в utils
-def format_duration(start, exp: datetime.datetime) -> str: 
+
+def pretty_duration(
+    expiration_date: str
+) -> str: 
+    start_datetime =    datetime.datetime.now()
+    expiration_datetime =      datetime.datetime.strptime(expiration_date[:10], "%Y-%m-%d")
     result = ""
-    diff = relativedelta(exp, start)
+
+    diff = relativedelta(expiration_datetime, start_datetime)
     years, months, days = diff.years, diff.months % 12, diff.days
     if years:
         if years == 1:
@@ -43,4 +75,25 @@ def format_duration(start, exp: datetime.datetime) -> str:
         elif (5 <= days <= 20) or (25 <= days <= 30):
             days_suffix = " дней"
         result += str(days) + days_suffix 
-    return result
+    return result.rstrip()
+
+
+def gen_main_subscribed(
+    expiration_date:       str,
+    profile_url:    str
+):    
+    text = """Подписка активна\.
+Срок\: до {} \({}\)\.
+    
+Ссылка на гайд\: {}
+    
+Ссылка на профиль\: {}""".format(
+    pretty_date(expiration_date),
+    pretty_duration(expiration_date),
+    GUIDE_URL,
+    '`' + profile_url + '`'
+    )
+    return text
+
+    
+

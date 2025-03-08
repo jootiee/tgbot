@@ -14,17 +14,20 @@ async def start(payload: types.Message | types.CallbackQuery, is_subscribed: boo
                 async with session.get(f'{API_URL}/users/{payload.from_user.id}/') as rg:
                     if (rg.status // 100) == 2:
                         user = await rg.json()
-                        start_date = datetime.strptime(user['start_date'][:19], "%Y-%m-%dT%H:%M:%S")
-                        expiration_date = datetime.strptime(user['expiration_date'][:19], "%Y-%m-%dT%H:%M:%S")
-                        # profile_url = user['profile_url']
-                        text = messages.main_subscribed.format("start_date", "expiration_date", 
-                                                               messages.format_duration(start_date, expiration_date),
-                                                               "guide_link",
-                                                               "profile_url")
-                        
+                        expiration_date = user['expiration_date']
+                        profile_url = user['profile_url']
+
+                        text = messages.gen_main_subscribed(
+                            expiration_date, 
+                            profile_url
+                        )
+
         else:
             text=messages.main_unsubscribed
-        if payload is types.CallbackQuery:
+        
+        # print(payload)    
+        
+        if type(payload) is types.CallbackQuery:
             await payload.message.answer(text=text,
                                 reply_markup=gen_inline(flag='main')
                                 )
