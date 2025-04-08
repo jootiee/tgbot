@@ -40,16 +40,18 @@ async def successful_payment(
     message: types.Message, 
     bot: Bot
 ):
+    with open('transactions.txt', 'w') as f:
+        f.write(f"{message.successful_payment.telegram_payment_charge_id} - {message.successful_payment.total_amount}\n")
     async with aiohttp.ClientSession() as session:
         async with session.patch(
             url=f'{API_URL}/users/{message.chat.id}',
             json={
                 'id': message.chat.id,
                 'username': message.chat.username,
-                'status': 'Active',
+                'active': True,
                 'profile_url': gen_url(),
                 'start_date': dt.datetime.strftime(dt.datetime.now(), "%Y-%m-%dT%H:%M:%S.000Z"),
-                'expiration_date': dt.datetime.strftime(dt.datetime.now() + dt.timedelta(days=30), "%Y-%m-%dT%H:%M:%S.000Z")
+                'expiration_date': dt.datetime.strftime(dt.datetime.now() + dt.timedelta(days=message.successful_payment.total_amount + 1), "%Y-%m-%dT%H:%M:%S.000Z")
             }
         ) as req:
             if (req.status // 100) == 2:
@@ -63,9 +65,12 @@ async def successful_payment(
 
     await message.answer("Оплата проведена успешно\.")
     
-    await bot.refund_star_payment(
+    refund = await bot.refund_star_payment(
         user_id=message.from_user.id,
         telegram_payment_charge_id=message.successful_payment.telegram_payment_charge_id
     )
-
-    await message.answer("Возврат произведен успешно\.")
+    
+    if refund is True:
+        await message.answer("Возврат произведен успешно\.")
+    else:
+        await message.answer("Возврат не удался\.")

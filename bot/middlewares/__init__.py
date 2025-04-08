@@ -4,7 +4,7 @@ import aiohttp
 from typing import Callable, Dict, Any, Awaitable
 
 from aiogram import BaseMiddleware
-from aiogram.types import TelegramObject, CallbackQuery
+from aiogram.types import TelegramObject, CallbackQuery, Message
 
 from data.config import API_URL
 from utils import messages 
@@ -26,13 +26,13 @@ class IsSubscribedMiddleware(BaseMiddleware):
             async with session.get(f'{API_URL}/users/{event.chat.id}/') as rg:
                 user = await rg.json()
                 if (rg.status // 100) == 2:
-                    # # passing data to handlers
                     user = await rg.json()
-                    data['is_subscribed'] = user['status'] == 'Active'
+                    data['is_subscribed'] = user['active']
                 else:
                     async with session.post(f'{API_URL}/users/', json={"id": event.chat.id,
                                                                        "username": event.chat.username}) as rg:
-                        # # TODO: log instead of print
+                        # TODO: log instead of print
+                        print(API_URL)
                         if (rg.status // 100) == 2:
                             print("user is created")
                         else:

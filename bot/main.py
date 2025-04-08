@@ -6,7 +6,7 @@ from aiogram import Bot, Dispatcher, Router
 from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command, CommandStart
 
-from middlewares import IsSubscribedMiddleware
+from middlewares import IsSubscribedMiddleware, MessageTrackerMiddleware
 from data.config import BOT_TOKEN
 from utils.notify_admins import on_startup, on_shutdown
 from handlers import register_user_handlers, create_commands

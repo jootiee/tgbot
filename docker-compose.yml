@@ -15,40 +15,39 @@ services:
 
     networks:
       - dev
-  
-  pgadmin:
-    container_name: pgadmin
-    image: dpage/pgadmin4
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-    # volumes:
-      #  - pgadmin:/var/lib/pgadmin
+
+  backend:
+    build:
+      context: ./backend
+      target: ${TARGET:-prod}
+    container_name: backend_container
 
     ports:
-      - "${PGADMIN_PORT:-5050}:80"
+      - "${SWAGGER_PORT:-8000}:8000"
+    environment:
+      DB_PATH: postgresql+asyncpg://postgres:admin@database/${DB_NAME:-db}
+      DB_ECHO: 1 
+      API_PATH: /api
+    depends_on:
+      - database
+    restart: always
+
     networks:
       - dev
-    restart: unless-stopped
 
+  bot:
+    build:
+      context: ./bot
+      target: ${TARGET:-prod}
+    container_name: bot_container
 
+    environment:
+      BOT_TOKEN: ${BOT_TOKEN:-1234567890:AABBccddeeffgghhjj-AAbbccddeeffgghh}
+      API_URL: "http://backend:${SWAGGER_PORT:-8000}/api"
+      ADMIN_ID: ${ADMIN_ID:-123456789}
+    depends_on:
+      - backend
+    restart: always
 
-  # backend:
-    # build:
-      # context: ./backend
-      # target: ${TARGET:-prod}
-    # container_name: backend_container
-
-    # ports:
-      # - "${SWAGGER_PORT:-8000}:8000"
-    # environment:
-      # DB_PATH: postgresql+asyncpg://postgres:admin@database/${DB_NAME:-db}
-      # DB_ECHO: 1 
-      # API_PATH: /api
-    # depends_on:
-      # - database
-    # restart: always
-
-    # networks:
-      # - dev
+    networks:
+      - dev

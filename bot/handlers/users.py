@@ -25,8 +25,6 @@ async def start(payload: types.Message | types.CallbackQuery, is_subscribed: boo
         else:
             text=messages.main_unsubscribed
         
-        # print(payload)    
-        
         if type(payload) is types.CallbackQuery:
             await payload.message.answer(text=text,
                                 reply_markup=gen_inline(flag='main')
@@ -36,7 +34,6 @@ async def start(payload: types.Message | types.CallbackQuery, is_subscribed: boo
             await payload.answer(text=text,
                                 reply_markup=gen_inline(flag='main')
                                 )
-
 
 
 async def help(payload: types.Message | types.CallbackQuery):

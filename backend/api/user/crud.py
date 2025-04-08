@@ -29,7 +29,7 @@ async def create_user(
     user = User(
         id=user_in.id,
         username=user_in.username,
-        status=user_in.status,
+        active=user_in.active,
     )
     session.add(user)
     await session.commit()

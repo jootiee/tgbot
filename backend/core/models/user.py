@@ -3,13 +3,8 @@ from core.models.base import Base
 from sqlalchemy import Enum, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
-import enum
 
 
-class State(str, enum.Enum):
-    active = "Active"
-    inactive = "Inactive"
-    suspended = "Suspended"
 
 
 class User(Base):
@@ -34,8 +29,8 @@ class User(Base):
         nullable=True
     )
 
-    status: Mapped[str] = mapped_column(
-        Enum(State)
+    active: Mapped[bool] = mapped_column(
+        nullable=False
     )
 
     profile_url: Mapped[str] = mapped_column(

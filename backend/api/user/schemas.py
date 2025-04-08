@@ -2,20 +2,17 @@ from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional
 
-from core.models.user import State
-
-
 class UserBase(BaseModel):
     id: int
     username: str
-    status: Optional[State] = State.inactive
+    active: Optional[bool] = False
 
 
 class UserCreate(UserBase):
     pass
 
 class UserUpdate(UserBase):
-    status: Optional[State] = State.inactive
+    active: Optional[bool] = False
     profile_url: Optional[str]
     start_date: Optional[datetime] = None
     expiration_date: Optional[datetime] = None
