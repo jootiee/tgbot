@@ -26,13 +26,12 @@ def gen_inline(flag='other', admin=False):
         case "main":
             if admin:
                 reply_kb.button(**BUTTONS['admin_panel_main'])
-            reply_kb.button(**BUTTONS['buy'])
             reply_kb.button(**BUTTONS['help'])
 
         case 'help':
             reply_kb.button(**BUTTONS['main_menu'])
 
-        case 'status':
+        case 'subscribed':
             reply_kb.button(**BUTTONS['help'])
 
         case 'admin_main':

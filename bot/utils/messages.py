@@ -41,7 +41,6 @@ def pretty_date(
     result = f"{str(int(date_pretty[0]))} {months[int(date_pretty[1])]} {date_pretty[2]}\, {time_pretty}"
     return result
 
-
 def pretty_duration(
     expiration_date: str
 ) -> str: 

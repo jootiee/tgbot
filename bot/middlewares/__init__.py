@@ -20,18 +20,23 @@ class IsSubscribedMiddleware(BaseMiddleware):
             event: TelegramObject,
             data: Dict[str, Any]
     ) -> Any:
-        if type(event) is CallbackQuery:
-            event = event.message
+        if isinstance(event, CallbackQuery):
+            user_id = event.from_user.id
+            username = event.from_user.username
+        elif isinstance(event, Message):
+            user_id = event.chat.id
+            username = event.chat.username
+        else:
+            return await handler(event, data)
+            
         async with aiohttp.ClientSession() as session:
-            async with session.get(f'{API_URL}/users/{event.chat.id}/') as rg:
-                user = await rg.json()
+            async with session.get(f'{API_URL}/users/{user_id}/') as rg:
                 if (rg.status // 100) == 2:
                     user = await rg.json()
                     data['is_subscribed'] = user['active']
                 else:
-                    async with session.post(f'{API_URL}/users/', json={"id": event.chat.id,
-                                                                       "username": event.chat.username}) as rg:
-                        # TODO: log instead of print
+                    async with session.post(f'{API_URL}/users/', json={"id": user_id,
+                                                                      "username": username}) as rg:
                         print(API_URL)
                         if (rg.status // 100) == 2:
                             print("user is created")
