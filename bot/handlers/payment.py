@@ -4,14 +4,20 @@ from aiogram import types, Bot, filters
 import datetime as dt
 from data.config import API_URL
 from utils.bridge import gen_url
-from utils import messages
+from utils import messages, send_or_edit_message
 from keyboards.inline import gen_inline
 
 async def buy_info(
     payload: types.CallbackQuery
 ):
-    await payload.answer(text=messages.buy_info,
-                                 reply_markup=gen_inline())
+    # await payload.answer(text=messages.buy_info,
+    #                              reply_markup=gen_inline())
+    await send_or_edit_message(
+        event=payload,
+        text=messages.buy_info,
+        reply_markup=gen_inline()
+    )
+    await payload.answer()
 
 # TEST PAYMENT
 async def cmd_buy(
@@ -19,7 +25,11 @@ async def cmd_buy(
     is_subscribed: bool
 ):
     if is_subscribed:
-        await message.answer("Вы не можете купить подписку, так как она у вас уже активна\.")
+        # await message.answer("Вы не можете купить подписку, так как она у вас уже активна\.")
+        await send_or_edit_message(
+            event=message,
+            text="Вы не можете купить подписку, так как она у вас уже активна\.",
+            reply_markup=gen_inline())
         return  
 
     parts = message.text.split()
@@ -28,14 +38,28 @@ async def cmd_buy(
     if len(parts) >= 2 and parts[1] == "test":
         is_test = True
         if len(parts) < 3 or not parts[2].isdigit():
-            await message.answer("Для тестовой оплаты укажите: /buy test {количество_дней}")
+            # await message.answer("Для тестовой оплаты укажите: /buy test {количество_дней}")
+            await send_or_edit_message(
+                event=message,
+                text="Для тестовой оплаты укажите: /buy test {количество_дней}",
+                reply_markup=gen_inline())
             return
         amount = int(parts[2])
     elif len(parts) >= 2 and parts[1].isdigit():
         amount = int(parts[1])
     else:
-        await message.answer("Через пробел необходимо указать целое число \- желаемую длительность подписки в днях\. Попробуйте еще раз\.")
+        # await message.answer("Через пробел необходимо указать целое число \- желаемую длительность подписки в днях\. Попробуйте еще раз\.")
+        await send_or_edit_message(
+            event=message,
+            text="Через пробел необходимо указать целое число \- желаемую длительность подписки в днях\. Попробуйте еще раз\.",
+            reply_markup=gen_inline())
         return
+
+    try:
+        await message.delete()
+    except Exception as e:
+        print(f"Failed to delete user message before payment: {e}")
+
 
     prices = [types.LabeledPrice(label="XTR", amount=amount)]
     payload = f"test_{amount}_days" if is_test else f"{amount}_days"
@@ -58,8 +82,6 @@ async def successful_payment(
     message: types.Message, 
     bot: Bot
 ):
-    # with open('transactions.txt', 'w') as f:
-    #     f.write(f"{message.successful_payment.telegram_payment_charge_id} - {message.successful_payment.total_amount}\n")
     is_test = message.successful_payment.invoice_payload.startswith("test_")
 
     async with aiohttp.ClientSession() as session:
@@ -75,9 +97,17 @@ async def successful_payment(
             }
         ) as req:
             if (req.status // 100) == 2:
-                await message.answer("Оплата проведена успешно\.", reply_markup=gen_inline())
+                text = "Оплата проведена успешно\."
+                # await message.answer("Оплата проведена успешно\.", reply_markup=gen_inline())
             else:
-                await message.answer("Возникла ошибка при попытке оплаты\. Обратитесь в поддержку\.", reply_markup=gen_inline())
+                # await message.answer("Возникла ошибка при попытке оплаты\. Обратитесь в поддержку\.", reply_markup=gen_inline())
+                text = "Возникла ошибка при попытке оплаты\. Обратитесь в поддержку\."
+
+        await send_or_edit_message(
+            event=message,
+            text=text,
+            reply_markup=gen_inline()
+        )
 
         if is_test:
             refund = await bot.refund_star_payment(
@@ -87,9 +117,7 @@ async def successful_payment(
 
 
             if refund is True:
-                # await message.answer("Возврат произведен успешно\.")
                 print("Возврат произведен успешно.")
             else:
-                # await message.answer("Возврат не удался\.")
                 print("Возврат не удался.")
     

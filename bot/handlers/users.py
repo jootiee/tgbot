@@ -3,7 +3,7 @@ import aiohttp
 from data.config import API_URL
 
 from datetime import datetime
-from utils import messages
+from utils import messages, send_or_edit_message
 from keyboards.inline import gen_inline
 
 
@@ -24,31 +24,40 @@ async def start(payload: Message | CallbackQuery, is_subscribed: bool):
         else:
             text = messages.main_unsubscribed
         
+        # await payload.answer(text=text,
+        #                     reply_markup=gen_inline(flag='main')
+        #                     )
+
+        await send_or_edit_message(event=payload,
+                                   text=text,
+                                   reply_markup=gen_inline(flag='main')
+                                   )
+
         if isinstance(payload, CallbackQuery):
-            await payload.message.answer(text=text,
-                                reply_markup=gen_inline(flag='main')
-                                )
             await payload.answer()
-        else:
-            await payload.answer(text=text,
-                                reply_markup=gen_inline(flag='main')
-                                )
 
 
 async def help(payload: Message | CallbackQuery):
-    if isinstance(payload, CallbackQuery):
-        await payload.message.answer(text=messages.help,
-                            reply_markup=gen_inline(flag='help')
-                                                    # status=status)
-        )
+    # if isinstance(payload, CallbackQuery):
+    #     await payload.message.answer(text=messages.help,
+    #                         reply_markup=gen_inline(flag='help')
+    #                                                 # status=status)
+    #     )
 
-        await payload.answer()
-    else:
-        await payload.answer(text=messages.help,
+    #     await payload.answer()
+    # else:
+    #     await payload.answer(text=messages.help,
+    #                         reply_markup=gen_inline(flag='help')
+    #     )
+
+    await send_or_edit_message(event=payload,
+                            text=messages.help,
                             reply_markup=gen_inline(flag='help')
-        )
+                            )
+
+    if isinstance(payload, CallbackQuery):
+        await payload.answer()
 
 
 async def unknown_query(message: Message):
-    print(message)
     await message.answer(text=messages.unknown_query)
