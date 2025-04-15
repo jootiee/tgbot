@@ -1,9 +1,22 @@
 import datetime
+from aiogram.utils import markdown
 from dateutil.relativedelta import relativedelta
 
-GUIDE_URL = "https\://google\.com/"
 
-months = {
+STARTUP = markdown.italic(markdown.text(
+    "Bot is running:",
+    datetime.datetime.strftime(
+        datetime.datetime.now(), "%Y\\-%m\\-%d %H\\:%M\\:%S")))
+
+SHUTDOWN = markdown.italic(markdown.text(
+    "Bot is stopped:",
+    datetime.datetime.strftime(
+        datetime.datetime.now(), "%Y\\-%m\\-%d %H\\:%M\\:%S")))
+
+
+GUIDE_URL = "https\\://google\\.com/"
+
+MONTHS = {
     1:  "января",
     2:  "февраля",
     3:  "марта",
@@ -18,28 +31,38 @@ months = {
     12: "декабря"
 }
 
-main_unsubscribed = (
-    '''Привет\!
-    Просто сервис\.'''
+MAIN_INACTIVE = markdown.text(
+    "Привет\\!",
+    "Просто сервис\\."
 )
 
-buy_info = """Для покупки введите команду \/buy и через пробел целым числом укажите количество месяцев\.
-Один день подписки \- одна звезда\."""
+PAYMENT_INFO = markdown.text(
+    "Для покупки введите команду \\/buy и через пробел целым числом укажите количество дней\\.",
+    "Один день подписки \\- одна звезда\\."
+)
 
-help = "По вопросом писать \@jootiee\."
+PAYMENT_UNAVAILABLE_ALREADY_SUBSCRIBED = "Вы не можете купить подписку\\, так как она у вас уже активна\\."
 
-unknown_query = "Неизвестный запрос\. Проверьте корректность ввода и попробуйте снова\."
+PAYMENT_WRONG_INPUT = "Через пробел необходимо указать целое число \\- желаемую длительность подписки в днях\\. Попробуйте еще раз\\.",
+
+PAYMENT_PROCESSED_SUCCESS = "Оплата произведена успешно\\."
+
+PAYMENT_PROCESSED_FAIL = "Возникла ошибка при попытке оплаты\\. Если вы считаете\\, что это ошибка\\, свяжитесь с поддержкой\\."
+
+HELP = "По вопросом писать \\@jootiee\\."
+
+UNKNOWN_QUERY = "Неизвестный запрос\\. Проверьте корректность ввода и попробуйте снова\\."
+
+NOT_FOUND = "Ничего не найдено\\. Если вы считаете\\, что это ошибка\\, свяжитесь с поддержкой\\."
 
 
 def pretty_date(
     date: str
 ) -> str:
-    "2025-03-09T00:16:27Z"
-
     date_pretty, time_pretty = date[:16].split("T")
     date_pretty = date_pretty.split("-")[::-1]
-    time_pretty = time_pretty.replace(":", "\:")
-    result = f"{str(int(date_pretty[0]))} {months[int(date_pretty[1])]} {date_pretty[2]}\, {time_pretty}"
+    time_pretty = time_pretty.replace(":", "\\:")
+    result = f"{str(int(date_pretty[0]))} {MONTHS[int(date_pretty[1])]} {date_pretty[2]}\\, {time_pretty}"
     return result
 
 
@@ -82,13 +105,10 @@ def pretty_duration(
 
 def gen_main_subscribed(
     expiration_date:       str,
-):
-    text = """Подписка активна\.
-Срок\: до {} \({}\)\.
-    
-Ссылка на гайд\: {}""".format(
-        pretty_date(expiration_date),
-        pretty_duration(expiration_date),
-        GUIDE_URL
+) -> str:
+    text = markdown.text(
+        "Подписка активна\\.",
+        f"Срок\\: до {pretty_date(expiration_date)} \\({pretty_duration(expiration_date)}\\)\\.",
+        "Ссылка на гайд\\: {GUIDE_URL}"
     )
     return text

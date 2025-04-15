@@ -27,7 +27,7 @@ async def cmd_buy(
     is_subscribed = expiration_date is not None
     if is_subscribed:
         await message.reply(
-            text="Вы не можете купить подписку, так как она у вас уже активна\.",
+            text=messages.PAYMENT_UNAVAILABLE_ALREADY_SUBSCRIBED,
             reply_markup=gen_inline()
         )
         return
@@ -49,7 +49,7 @@ async def cmd_buy(
     else:
         await message.answer(
             event=message,
-            text="Через пробел необходимо указать целое число \- желаемую длительность подписки в месяцах\. Попробуйте еще раз\.",
+            text=messages.PAYMENT_WRONG_INPUT,
             reply_markup=gen_inline()
         )
         return
@@ -85,22 +85,17 @@ async def successful_payment(
             session=session
         )
 
-        res = await db.update_user(
+        success = await db.update_user(
             id=message.chat.id,
             username=message.chat.username,
             awg_id=awg_id,
             expires_at=dt.datetime.strftime(dt.datetime.now() + dt.timedelta(
-                days=message.successful_payment.total_amount * 30 + 1), "%Y-%m-%dT%H:%M:%S.000Z"),
+                days=message.successful_payment.total_amount + 1), "%Y-%m-%dT%H:%M:%S.000Z"),
             session=session
         )
 
-    if res is True:
-        text = "Оплата проведена успешно\."
-    else:
-        text = "Возникла ошибка при попытке оплаты\. Обратитесь в поддержку\."
-
     await message.answer(
-        text=text,
+        text=messages.PAYMENT_PROCESSED_SUCCESS if success else messages.PAYMENT_PROCESSED_FAIL,
         reply_markup=gen_inline()
     )
 

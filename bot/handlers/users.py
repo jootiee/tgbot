@@ -61,7 +61,7 @@ async def get_qr(
         return
 
     await payload.message.answer(
-        text="Not found",
+        text=messages.NOT_FOUND,
         reply_markup=gen_inline()
     )
 
@@ -83,7 +83,7 @@ async def get_conf(
         return
 
     await payload.message.answer(
-        text="Not found",
+        text=messages.NOT_FOUND,
         reply_markup=gen_inline()
     )
 
@@ -92,6 +92,6 @@ async def unknown_query(
     message: Message
 ):
     await message.answer(
-        text=messages.unknown_query,
+        text=messages.UNKNOWN_QUERY,
         reply_markup=gen_inline()
     )

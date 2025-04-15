@@ -1,20 +1,26 @@
 import logging
+from aiogram import Bot
 from datetime import datetime as dt
 
-from aiogram import Bot
-
 from data.config import ADMIN_ID
+from utils import messages
 
 
 async def on_startup(bot: Bot):
     try:
-        await bot.send_message(ADMIN_ID, "Bot is running: " + str(dt.strftime(dt.now(), "%Y\\-%m\\-%d %H\\:%M\\:%S")))
+        await bot.send_message(
+            ADMIN_ID,
+            messages.STARTUP
+        )
     except Exception as err:
         logging.exception(err)
 
 
 async def on_shutdown(bot: Bot):
     try:
-        await bot.send_message(ADMIN_ID, "Bot has stopped: " + str(dt.strftime(dt.now(), "%Y\\-%m\\-%d %H\\:%M\\:%S")))
+        await bot.send_message(
+            ADMIN_ID,
+            messages.SHUTDOWN
+        )
     except Exception as err:
         logging.exception(err)
