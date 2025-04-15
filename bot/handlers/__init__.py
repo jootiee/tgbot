@@ -35,4 +35,3 @@ def register_user_handlers(router: Router):
 
     router.message.register(
         unknown_query, F.content_type != ContentType.REFUNDED_PAYMENT)
-    # router.message.register(unknown_query)

@@ -1,4 +1,5 @@
 import aiohttp
+import logging
 from aiogram import types, Bot, filters
 
 import datetime as dt
@@ -110,6 +111,8 @@ async def successful_payment(
         )
 
         if refund is True:
-            print("Возврат произведен успешно.")
+            logging.info(
+                f"Возврат произведен успешно: {message.successful_payment.telegram_payment_charge_id}")
         else:
-            print("Возврат не удался.")
+            logging.error(
+                f"Возврат не удался: {message.successful_payment.telegram_payment_charge_id}")

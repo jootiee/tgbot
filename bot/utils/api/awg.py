@@ -1,5 +1,7 @@
 from aiohttp import ClientSession
 from typing import Optional
+import logging
+
 from data.config import AWG_API
 
 
@@ -23,7 +25,7 @@ async def create_client(
     }) as rg:
         if (rg.status // 100) == 2:
             return await get_id(name, session)
-        print("Unable to create client:", rg.json)
+        logging.error("Unable to create client:", rg.json)
 
 
 async def enable_client(
@@ -34,7 +36,7 @@ async def enable_client(
         if (rg.status // 100) == 2:
             return True
         else:
-            print("Unable enable client:", rg.json)
+            logging.error("Unable enable client:", rg.json)
             return False
 
 
@@ -46,7 +48,7 @@ async def disable_client(
         if (rg.status // 100) == 2:
             return True
         else:
-            print("Unable disable client:", rg.json)
+            logging.error("Unable disable client:", rg.json)
             return False
 
 
@@ -70,7 +72,7 @@ async def get_qr(
         if (rg.status // 100) == 2:
             return await rg.text()
         else:
-            print("Unable to get qr code:", rg.json)
+            logging.error("Unable to get qr code:", rg.json)
             return None
 
 
@@ -83,17 +85,5 @@ async def get_conf(
         if (rg.status // 100) == 2:
             return await rg.text()
         else:
-            print("Unable to get qr code:", rg.json)
+            logging.error("Unable to get qr code:", rg.json)
             return None
-
-# if __name__ == "__main__":
-#     import asyncio
-#     from aiohttp import ClientSession
-#     AWG_API = "http://localhost:51821/api/wireguard"
-
-#     async def main():
-#         async with ClientSession() as session:
-#             id = "269317391"
-#             res = await get_conf(id, session)
-
-#     asyncio.run(main())

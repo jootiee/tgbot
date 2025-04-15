@@ -20,7 +20,9 @@ BUTTONS = {'admin_panel_main':      {"text": 'Админ панель',         
            }
 
 
-def gen_inline(flag='other', admin=False):
+def gen_inline(
+    flag='other', admin=False
+) -> InlineKeyboardMarkup:
     reply_kb = InlineKeyboardBuilder()
     match flag:
         case "main":
