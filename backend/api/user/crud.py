@@ -14,6 +14,7 @@ async def get_users(
     users = result.scalars().all()
     return list(users)
 
+
 async def get_user_by_id(
         session: AsyncSession,
         id: int
@@ -22,18 +23,19 @@ async def get_user_by_id(
     user = result.scalar_one_or_none()
     return user
 
+
 async def create_user(
         session: AsyncSession,
         user_in: UserCreate
 ) -> User:
     user = User(
         id=user_in.id,
-        username=user_in.username,
-        active=user_in.active,
+        username=user_in.username
     )
     session.add(user)
     await session.commit()
     return user
+
 
 async def delete_user_by_id(
         session: AsyncSession,
@@ -46,6 +48,7 @@ async def delete_user_by_id(
     await session.delete(user)
     await session.commit()
     return True
+
 
 async def update_user_by_id(
         session: AsyncSession,

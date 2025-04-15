@@ -10,29 +10,33 @@ BUTTONS = {'admin_panel_main':      {"text": 'Админ панель',         
            'payment_accept':        {"text": 'Подтвердить',            "callback_data": 'payment_accept'},
            'payment_decline':       {"text": 'Отказать',               "callback_data": 'payment_decline'},
 
-           'status':                {"text": 'Статус подписки',        "callback_data": 'status'},
+           'qr':                    {"text": 'QR-код профиля',        "callback_data": 'qr'},
+           'conf_file':             {"text": 'Файл профиля',        "callback_data": 'conf'},
            'buy':                   {"text": 'Приобрести подписку',    "callback_data": 'buy'},
-           'help':                  {"text": 'Помощь',                 "callback_data": 'help'}, 
+           'help':                  {"text": 'Помощь',                 "callback_data": 'help'},
            'main_menu':             {"text": 'Главное меню',           "callback_data": 'main_menu'},
            'main_menu_active':      {"text": 'Главное меню',           "callback_data": 'status'},
            'payment':               {"text": 'Я оплатил',              "callback_data": 'payment'},
-}
+           }
 
 
 def gen_inline(flag='other', admin=False):
     reply_kb = InlineKeyboardBuilder()
-    reply_kb.adjust(1)
     match flag:
         case "main":
             if admin:
                 reply_kb.button(**BUTTONS['admin_panel_main'])
+            reply_kb.button(**BUTTONS['buy'])
             reply_kb.button(**BUTTONS['help'])
 
         case 'help':
             reply_kb.button(**BUTTONS['main_menu'])
 
         case 'subscribed':
+            reply_kb.button(**BUTTONS['qr'])
+            reply_kb.button(**BUTTONS['conf_file'])
             reply_kb.button(**BUTTONS['help'])
+            reply_kb.adjust(2, 1)
 
         case 'admin_main':
             reply_kb.button(**BUTTONS['admin_panel_stats'])
@@ -43,10 +47,5 @@ def gen_inline(flag='other', admin=False):
             reply_kb.button(**BUTTONS['main_menu'])
         case _:
             reply_kb.button(**BUTTONS['main_menu'])
-            if admin:
-                reply_kb.button(**BUTTONS['admin_panel_main'])
-            else:
-                reply_kb.button(**BUTTONS['help'])
-    
-    return reply_kb.as_markup()
 
+    return reply_kb.as_markup()

@@ -5,7 +5,7 @@ __all__ = [
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.types import BotCommand, ContentType
-from handlers.users import start, help, unknown_query
+from handlers.users import start, help, unknown_query, get_qr, get_conf
 from handlers.payment import buy_info, cmd_buy, pre_checkout_query, successful_payment
 
 
@@ -28,9 +28,11 @@ def register_user_handlers(router: Router):
     router.callback_query.register(buy_info, F.data == 'buy')
     router.message.register(cmd_buy, Command(commands=['buy']))
     router.pre_checkout_query.register(pre_checkout_query)
-    router.message.register(successful_payment, F.content_type == ContentType.SUCCESSFUL_PAYMENT)
+    router.message.register(
+        successful_payment, F.content_type == ContentType.SUCCESSFUL_PAYMENT)
+    router.callback_query.register(get_qr, F.data == 'qr')
+    router.callback_query.register(get_conf, F.data == 'conf')
 
-
-    router.message.register(unknown_query, F.content_type != ContentType.REFUNDED_PAYMENT)
+    router.message.register(
+        unknown_query, F.content_type != ContentType.REFUNDED_PAYMENT)
     # router.message.register(unknown_query)
-

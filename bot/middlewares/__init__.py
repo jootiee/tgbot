@@ -6,8 +6,7 @@ from typing import Callable, Dict, Any, Awaitable
 from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject, CallbackQuery, Message
 
-from data.config import API_URL
-from utils import messages 
+from utils.api import db
 
 
 class IsSubscribedMiddleware(BaseMiddleware):
@@ -28,19 +27,12 @@ class IsSubscribedMiddleware(BaseMiddleware):
             username = event.chat.username
         else:
             return await handler(event, data)
-            
+
         async with aiohttp.ClientSession() as session:
-            async with session.get(f'{API_URL}/users/{user_id}/') as rg:
-                if (rg.status // 100) == 2:
-                    user = await rg.json()
-                    data['is_subscribed'] = user['active']
-                else:
-                    async with session.post(f'{API_URL}/users/', json={"id": user_id,
-                                                                      "username": username}) as rg:
-                        print(API_URL)
-                        if (rg.status // 100) == 2:
-                            print("user is created")
-                        else:
-                            print("unable to create user")
-                    data['is_subscribed'] = False
+            user = await db.get_user(user_id, session)
+            if user is None:
+                await db.create_user(user_id, username, session)
+            else:
+                data['expires_at'] = user['expires_at']
+
         return await handler(event, data)

@@ -23,29 +23,32 @@ main_unsubscribed = (
     Просто сервис\.'''
 )
 
-buy_info = """Для покупки введите команду \/buy и через пробел целым числом укажите количество дней\.
+buy_info = """Для покупки введите команду \/buy и через пробел целым числом укажите количество месяцев\.
 Один день подписки \- одна звезда\."""
 
 help = "По вопросом писать \@jootiee\."
 
 unknown_query = "Неизвестный запрос\. Проверьте корректность ввода и попробуйте снова\."
 
+
 def pretty_date(
     date: str
 ) -> str:
     "2025-03-09T00:16:27Z"
-    
+
     date_pretty, time_pretty = date[:16].split("T")
     date_pretty = date_pretty.split("-")[::-1]
     time_pretty = time_pretty.replace(":", "\:")
     result = f"{str(int(date_pretty[0]))} {months[int(date_pretty[1])]} {date_pretty[2]}\, {time_pretty}"
     return result
 
+
 def pretty_duration(
     expiration_date: str
-) -> str: 
-    start_datetime =    datetime.datetime.now()
-    expiration_datetime =      datetime.datetime.strptime(expiration_date[:10], "%Y-%m-%d")
+) -> str:
+    start_datetime = datetime.datetime.now()
+    expiration_datetime = datetime.datetime.strptime(
+        expiration_date[:10], "%Y-%m-%d")
     result = ""
 
     diff = relativedelta(expiration_datetime, start_datetime)
@@ -65,7 +68,7 @@ def pretty_duration(
             months_suffix = " месяца "
         else:
             months_suffix = " месяцев "
-        result += str(months) + months_suffix 
+        result += str(months) + months_suffix
     if days:
         if days in (1, 21, 31):
             days_suffix = " день"
@@ -73,26 +76,19 @@ def pretty_duration(
             days_suffix = " дня"
         elif (5 <= days <= 20) or (25 <= days <= 30):
             days_suffix = " дней"
-        result += str(days) + days_suffix 
+        result += str(days) + days_suffix
     return result.rstrip()
 
 
 def gen_main_subscribed(
     expiration_date:       str,
-    profile_url:    str
-):    
+):
     text = """Подписка активна\.
 Срок\: до {} \({}\)\.
     
-Ссылка на гайд\: {}
-    
-Ссылка на профиль\: {}""".format(
-    pretty_date(expiration_date),
-    pretty_duration(expiration_date),
-    GUIDE_URL,
-    '`' + profile_url + '`'
+Ссылка на гайд\: {}""".format(
+        pretty_date(expiration_date),
+        pretty_duration(expiration_date),
+        GUIDE_URL
     )
     return text
-
-    
-

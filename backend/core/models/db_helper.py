@@ -23,8 +23,8 @@ class DatabaseHelper:
             scopefunc=current_task
         )
         return session
-# TODO
-    async def session_dependency(self) -> AsyncSession: # type: ignore
+
+    async def session_dependency(self) -> AsyncSession:
         session = self.get_scoped_session()
         yield session
         await session.close()

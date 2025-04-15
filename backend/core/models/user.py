@@ -1,10 +1,8 @@
 from core.models.base import Base
 
-from sqlalchemy import Enum, DateTime
+from sqlalchemy import DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
-
-
 
 
 class User(Base):
@@ -13,26 +11,17 @@ class User(Base):
         unique=True,
         nullable=False
     )
-    
+
     username: Mapped[str] = mapped_column(
-        unique=True, 
+        unique=True,
         nullable=False,
     )
 
-    start_date: Mapped[datetime] = mapped_column(
+    expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=True
     )
 
-    expiration_date: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True
-    )
-
-    active: Mapped[bool] = mapped_column(
-        nullable=False
-    )
-
-    profile_url: Mapped[str] = mapped_column(
+    awg_id: Mapped[str] = mapped_column(
         nullable=True
     )

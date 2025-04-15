@@ -4,5 +4,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BOT_TOKEN = getenv("BOT_TOKEN")
-API_URL = getenv("API_URL")
+AWG_API = getenv("AWG_API")
+DB_API = getenv("DB_API")
 ADMIN_ID = getenv("ADMIN_ID")
