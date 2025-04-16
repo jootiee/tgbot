@@ -1,0 +1,17 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Bot",
+            "type": "shell",
+            "command": "bot/.venv/bin/python3.12 bot/main.py",
+            "problemMatcher": []
+        },
+        {
+            "label": "Backend",
+            "type": "shell",
+            "command": "backend/.venv/bin/python3.12 backend/main.py",
+            "problemMatcher": []
+        }
+    ]
+}
