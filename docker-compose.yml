@@ -41,7 +41,8 @@ services:
 
     environment:
       BOT_TOKEN: ${BOT_TOKEN:-1234567890:AABBccddeeffgghhjj-AAbbccddeeffgghh}
-      API_URL: "http://backend:${SWAGGER_PORT:-8000}/api"
+      DB_API: "http://backend:${SWAGGER_PORT:-8000}/api"
+      AWG_API: ${AWG_API:-http://localhost:51821/api/wireguard}
       ADMIN_ID: ${ADMIN_ID:-123456789}
     depends_on:
       - backend
