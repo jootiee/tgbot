@@ -5,3 +5,4 @@ __pycache__/
 .zed/
 .py.icloud
 config.env
+.*
