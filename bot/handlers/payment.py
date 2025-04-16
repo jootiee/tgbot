@@ -14,7 +14,7 @@ async def buy_info(
 ):
     await payload.answer()
     await payload.message.answer(
-        text=messages.buy_info,
+        text=messages.PAYMENT_INFO,
         reply_markup=gen_inline()
     )
 
@@ -22,9 +22,9 @@ async def buy_info(
 async def cmd_buy(
     message: types.Message,
     bot: Bot,
-    expiration_date: str | None = None,
+    expires_at: str | None = None,
 ):
-    is_subscribed = expiration_date is not None
+    is_subscribed = expires_at is not None
     if is_subscribed:
         await message.reply(
             text=messages.PAYMENT_UNAVAILABLE_ALREADY_SUBSCRIBED,
@@ -39,7 +39,7 @@ async def cmd_buy(
         is_test = True
         if len(parts) < 3 or not parts[2].isdigit():
             await message.answer(
-                text="Для тестовой оплаты укажите: /buy test {количество_дней}",
+                text="Для тестовой оплаты укажите\\: /buy test \\{количество_дней\\}",
                 reply_markup=gen_inline()
             )
             return

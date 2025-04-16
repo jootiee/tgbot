@@ -2,7 +2,6 @@ from aiogram.types import Message, CallbackQuery, BufferedInputFile
 from typing import Optional, Union
 import aiohttp
 from cairosvg import svg2png
-import io
 
 
 from utils import messages
@@ -18,7 +17,7 @@ async def start(
     if is_subscribed:
         text = messages.gen_main_subscribed(expires_at)
     else:
-        text = messages.main_unsubscribed
+        text = messages.MAIN_INACTIVE
 
     if isinstance(payload, CallbackQuery):
         await payload.answer()
@@ -38,7 +37,7 @@ async def help(
         payload = payload.message
 
     await payload.answer(
-        text=messages.help,
+        text=messages.HELP,
         reply_markup=gen_inline(flag='help')
     )
 

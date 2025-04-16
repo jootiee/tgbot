@@ -3,15 +3,15 @@ from aiogram.utils import markdown
 from dateutil.relativedelta import relativedelta
 
 
-STARTUP = markdown.italic(markdown.text(
+STARTUP = markdown.text(
     "Bot is running:",
     datetime.datetime.strftime(
-        datetime.datetime.now(), "%Y\\-%m\\-%d %H\\:%M\\:%S")))
+        datetime.datetime.now(), "%Y\\-%m\\-%d %H\\:%M\\:%S"))
 
-SHUTDOWN = markdown.italic(markdown.text(
+SHUTDOWN = markdown.text(
     "Bot is stopped:",
     datetime.datetime.strftime(
-        datetime.datetime.now(), "%Y\\-%m\\-%d %H\\:%M\\:%S")))
+        datetime.datetime.now(), "%Y\\-%m\\-%d %H\\:%M\\:%S"))
 
 
 GUIDE_URL = "https\\://google\\.com/"
@@ -43,7 +43,7 @@ PAYMENT_INFO = markdown.text(
 
 PAYMENT_UNAVAILABLE_ALREADY_SUBSCRIBED = "Вы не можете купить подписку\\, так как она у вас уже активна\\."
 
-PAYMENT_WRONG_INPUT = "Через пробел необходимо указать целое число \\- желаемую длительность подписки в днях\\. Попробуйте еще раз\\.",
+PAYMENT_WRONG_INPUT = "Через пробел необходимо указать целое число \\- желаемую длительность подписки в днях\\. Попробуйте еще раз\\."
 
 PAYMENT_PROCESSED_SUCCESS = "Оплата произведена успешно\\."
 
@@ -67,14 +67,14 @@ def pretty_date(
 
 
 def pretty_duration(
-    expiration_date: str
+    expires_at: str
 ) -> str:
     start_datetime = datetime.datetime.now()
-    expiration_datetime = datetime.datetime.strptime(
-        expiration_date[:10], "%Y-%m-%d")
+    expires_at_datetime = datetime.datetime.strptime(
+        expires_at[:10], "%Y-%m-%d")
     result = ""
 
-    diff = relativedelta(expiration_datetime, start_datetime)
+    diff = relativedelta(expires_at_datetime, start_datetime)
     years, months, days = diff.years, diff.months % 12, diff.days
     if years:
         if years == 1:
@@ -104,11 +104,11 @@ def pretty_duration(
 
 
 def gen_main_subscribed(
-    expiration_date:       str,
+    expires_at:       str,
 ) -> str:
     text = markdown.text(
         "Подписка активна\\.",
-        f"Срок\\: до {pretty_date(expiration_date)} \\({pretty_duration(expiration_date)}\\)\\.",
-        "Ссылка на гайд\\: {GUIDE_URL}"
+        f"Срок\\: до {pretty_date(expires_at)} \\({pretty_duration(expires_at)}\\)\\.",
+        f"Ссылка на гайд\\: {GUIDE_URL}"
     )
     return text
