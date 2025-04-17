@@ -38,7 +38,8 @@ MAIN_INACTIVE = markdown.text(
 
 PAYMENT_INFO = markdown.text(
     "Для покупки введите команду \\/buy и через пробел целым числом укажите количество дней\\.",
-    "Один день подписки \\- одна звезда\\."
+    "Один день подписки \\- одна звезда\\.",
+    sep="\n"
 )
 
 PAYMENT_UNAVAILABLE_ALREADY_SUBSCRIBED = "Вы не можете купить подписку\\, так как она у вас уже активна\\."
@@ -55,6 +56,49 @@ UNKNOWN_QUERY = "Неизвестный запрос\\. Проверьте ко�
 
 NOT_FOUND = "Ничего не найдено\\. Если вы считаете\\, что это ошибка\\, свяжитесь с поддержкой\\."
 
+ADMIN_GET_CLIENTS_FAILURE = "Не удалось получить список клиентов\\."
+
+
+ADMIN_CLIENT_INFO = markdown.text(
+    "Telegram ID: {}",
+    "Telegram username: @{}",
+    "Дата истечения: {}",
+    "AWG ID: {}",
+    sep="\n"
+)
+
+ADMIN_ADD_CLIENT_WRONG_INPUT = markdown.text(
+    "Некорректный ввод\\.",
+    "Через пробел необходимо указать id клиента \\(целое число\\)\\, никнейм в Telegram и длительность подписки в днях \\(целое число\\)\\."
+    "Пример: /client 1234567890 durov 52\\.",
+    sep="\n"
+)
+
+ADMIN_ADD_CLIENT_SUCCESS = markdown.text(
+    "Клиент успешно добавлен\\.",
+    "ID клиента в AWG\\: {}",
+    sep="\n"
+)
+
+ADMIN_ADD_CLIENT_FAILURE = markdown.text(
+    "Не удалось добавить клиента {} - {}\\.",
+    "Проверьте корректность ввода и попробуйте снова\\.",
+    sep="\n"
+)
+
+ADMIN_REFUND_PAYMENT_WRONG_INPUT = markdown.text(
+    "Некорректный ввод\\.",
+    "Через пробел необходимо указать id транзакции \\(строка\\)."
+    "Пример: /refund stxHiqdhhLlzcmiFPJJ7iVkD9f7Z\\-g1kxeJLJgb3rqS\\-26b5Wh5\\_jU\\-pTtkqsba7lLC\\_R8T0fQJX2AYCxXyvtBckZM5xgOMxuP\\-aLHThEG3TnI\\.",
+    sep="\n"
+)
+
+ADMIN_REFUND_PAYMENT_SUCCESS = markdown.text(
+    "Возврат произведен успешно\\.",
+    "ID транзакции \\: {}",
+    sep="\n"
+)
+
 
 def pretty_date(
     date: str
@@ -69,9 +113,14 @@ def pretty_date(
 def pretty_duration(
     expires_at: str
 ) -> str:
-    start_datetime = datetime.datetime.now()
+    start_datetime = datetime.datetime.now(
+        # tz=datetime.timezone(
+        #     datetime.timedelta(hours=3)
+        # )
+    )
     expires_at_datetime = datetime.datetime.strptime(
-        expires_at[:10], "%Y-%m-%d")
+        expires_at[:10], "%Y-%m-%d"
+    )
     result = ""
 
     diff = relativedelta(expires_at_datetime, start_datetime)
@@ -109,6 +158,7 @@ def gen_main_subscribed(
     text = markdown.text(
         "Подписка активна\\.",
         f"Срок\\: до {pretty_date(expires_at)} \\({pretty_duration(expires_at)}\\)\\.",
-        f"Ссылка на гайд\\: {GUIDE_URL}"
+        f"Ссылка на гайд\\: {GUIDE_URL}",
+        sep="\n"
     )
     return text

@@ -7,8 +7,6 @@ BUTTONS = {'admin_panel_main':      {"text": 'Админ панель',         
            'admin_panel_resume':    {"text": 'Возобновить подписку',   "callback_data": 'admin_panel_resume'},
            'admin_panel_new':       {"text": 'Выдать подписку',        "callback_data": 'admin_panel_new'},
            'admin_panel_all_users': {"text": 'Список пользователей',   "callback_data": 'admin_panel_all_users'},
-           'payment_accept':        {"text": 'Подтвердить',            "callback_data": 'payment_accept'},
-           'payment_decline':       {"text": 'Отказать',               "callback_data": 'payment_decline'},
 
            'qr':                    {"text": 'QR-код профиля',        "callback_data": 'qr'},
            'conf_file':             {"text": 'Файл профиля',        "callback_data": 'conf'},

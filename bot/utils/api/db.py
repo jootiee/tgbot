@@ -3,6 +3,16 @@ from typing import Optional
 from data.config import DB_API
 
 
+async def get_users(
+    session: ClientSession
+) -> Optional[dict]:
+    async with session.get(f'{DB_API}/users/') as rg:
+        if (rg.status // 100) == 2:
+            user = await rg.json()
+            return user
+        return None
+
+
 async def get_user(
     id: int,
     session: ClientSession
