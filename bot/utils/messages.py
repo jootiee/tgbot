@@ -33,7 +33,11 @@ MONTHS = {
 
 MAIN_INACTIVE = markdown.text(
     "Привет\\!",
-    "Просто сервис\\."
+    "С помощью этого бота ты можешь оформить подписку на VPN\\.",
+    "Страна VPN - Франция. Instagram, Tiktok, Spotify - доступны\\.",
+    "",
+    markdown.italic("\\(я не придумал, что еще можно здесь написать\\)"),
+    sep="\n"
 )
 
 PAYMENT_INFO = markdown.text(
@@ -50,7 +54,7 @@ PAYMENT_PROCESSED_SUCCESS = "Оплата произведена успешно\
 
 PAYMENT_PROCESSED_FAIL = "Возникла ошибка при попытке оплаты\\. Если вы считаете\\, что это ошибка\\, свяжитесь с поддержкой\\."
 
-HELP = "По вопросом писать \\@jootiee\\."
+HELP = "По любым вопросам писать \\@jootiee\\."
 
 UNKNOWN_QUERY = "Неизвестный запрос\\. Проверьте корректность ввода и попробуйте снова\\."
 
@@ -114,9 +118,6 @@ def pretty_duration(
     expires_at: str
 ) -> str:
     start_datetime = datetime.datetime.now(
-        # tz=datetime.timezone(
-        #     datetime.timedelta(hours=3)
-        # )
     )
     expires_at_datetime = datetime.datetime.strptime(
         expires_at[:10], "%Y-%m-%d"
