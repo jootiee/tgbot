@@ -117,14 +117,12 @@ def pretty_date(
 def pretty_duration(
     expires_at: str
 ) -> str:
-    start_datetime = datetime.datetime.now(
+    start_dt = datetime.datetime.now(
     )
-    expires_at_datetime = datetime.datetime.strptime(
-        expires_at[:10], "%Y-%m-%d"
-    )
+    expires_at_dt = datetime.datetime.fromisoformat(expires_at)
     result = ""
 
-    diff = relativedelta(expires_at_datetime, start_datetime)
+    diff = relativedelta(expires_at_dt, start_dt)
     years, months, days = diff.years, diff.months % 12, diff.days
     if years:
         if years == 1:
