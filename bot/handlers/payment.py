@@ -1,9 +1,8 @@
 import aiohttp
 import logging
-from aiogram import types, Bot, filters
+from aiogram import types, Bot
 
 import datetime as dt
-from data.config import DB_API
 from utils import messages
 from utils.api import db, awg
 from keyboards.inline import gen_inline
@@ -21,7 +20,6 @@ async def buy_info(
 
 async def cmd_buy(
     message: types.Message,
-    bot: Bot,
     expires_at: str | None = None,
 ):
     is_subscribed = expires_at is not None
@@ -33,20 +31,8 @@ async def cmd_buy(
         return
 
     parts = message.text.split()
-    is_test = False
 
-    if len(parts) >= 2 and parts[1] == "test":
-        is_test = True
-        if len(parts) < 3 or not parts[2].isdigit():
-            await message.answer(
-                text="Для тестовой оплаты укажите\\: /buy test \\{количество_дней\\}",
-                reply_markup=gen_inline()
-            )
-            return
-        amount = int(parts[2])
-    elif len(parts) >= 2 and parts[1].isdigit():
-        amount = int(parts[1])
-    else:
+    if len(parts) != 2:
         await message.answer(
             event=message,
             text=messages.PAYMENT_WRONG_INPUT,
@@ -54,12 +40,14 @@ async def cmd_buy(
         )
         return
 
+    amount = int(parts[1])
+
     prices = [types.LabeledPrice(label="XTR", amount=amount)]
-    payload = f"test_{amount}_days" if is_test else f"{amount}_days"
+    payload = f"{amount}_days"
 
     message = await message.answer_invoice(
-        title="Test payment" if is_test else "Subscription payment",
-        description=f"{'Тестовая оплата' if is_test else 'Оплата'} подписки на {amount} дней.",
+        title="Subscription payment",
+        description=f"Оплата подписки на {amount} дней.",
         prices=prices,
         payload=payload,
         currency="XTR"

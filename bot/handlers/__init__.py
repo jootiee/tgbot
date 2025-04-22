@@ -7,7 +7,7 @@ from aiogram.filters import Command
 from aiogram.types import BotCommand, ContentType
 
 from filters import IsAdmin
-from handlers.admin import get_clients, add_client, refund
+from handlers.admin import get_clients, add_client, refund, buy_test
 from handlers.users import start, help, unknown_query, get_qr, get_conf
 from handlers.payment import buy_info, cmd_buy, pre_checkout_query, successful_payment
 
@@ -84,6 +84,12 @@ def register_user_handlers(router: Router):
     router.message.register(
         refund,
         Command(commands=['refund']),
+        IsAdmin()
+    )
+
+    router.message.register(
+        buy_test,
+        Command(commands=['buy_test']),
         IsAdmin()
     )
 

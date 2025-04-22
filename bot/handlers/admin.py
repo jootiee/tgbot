@@ -1,4 +1,4 @@
-from aiogram.types import Message
+from aiogram.types import Message, LabeledPrice
 from aiogram.utils import markdown
 from keyboards.inline import gen_inline
 from utils import messages
@@ -6,6 +6,31 @@ from utils.api import db, awg
 import logging
 import datetime as dt
 import aiohttp
+
+
+async def buy_test(
+    message: Message,
+):
+    parts = message.text.split()
+
+    if len(parts) != 2:
+        await message.answer(
+            text="Для тестовой оплаты укажите\\: /buy_test \\{количество_дней\\}",
+            reply_markup=gen_inline()
+        )
+        return
+    amount = int(parts[1])
+
+    prices = [LabeledPrice(label="XTR", amount=1)]
+    payload = f"test_{amount}_days"
+
+    message = await message.answer_invoice(
+        title="Test payment",
+        description=f"Тестовая оплата подписки на {amount} дней.",
+        prices=prices,
+        payload=payload,
+        currency="XTR"
+    )
 
 
 async def get_clients(
