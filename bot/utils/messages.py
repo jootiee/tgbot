@@ -117,9 +117,9 @@ def pretty_date(
 def pretty_duration(
     expires_at: str
 ) -> str:
-    start_dt = datetime.datetime.now(
-    )
-    expires_at_dt = datetime.datetime.fromisoformat(expires_at)
+    expires_at_dt = datetime.datetime.fromisoformat(
+        expires_at).replace(tzinfo=None)
+    start_dt = datetime.datetime.now()
     result = ""
 
     diff = relativedelta(expires_at_dt, start_dt)
